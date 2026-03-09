@@ -1,6 +1,6 @@
 # Authentication
 
-`codex-py` uses OAuth 2.0 with PKCE to authenticate against OpenAI's auth server. Tokens are cached at `~/.codex/auth.json` (shared with the official Codex CLI).
+`codex-open-client` uses OAuth 2.0 with PKCE to authenticate against OpenAI's auth server. Tokens are cached at `~/.codex/auth.json` (shared with the official Codex CLI).
 
 ## Authentication Modes
 
@@ -9,7 +9,7 @@
 Opens your browser and starts a local server on `localhost:1455` to catch the callback:
 
 ```python
-client = codex_py.CodexClient()
+client = codex_open_client.CodexClient()
 ```
 
 Best for local development on a machine with a browser.
@@ -19,7 +19,7 @@ Best for local development on a machine with a browser.
 Prints the URL instead of opening a browser, but still uses the local callback server:
 
 ```python
-client = codex_py.CodexClient(no_browser=True)
+client = codex_open_client.CodexClient(no_browser=True)
 ```
 
 Useful when running over SSH with port forwarding, or when `webbrowser.open()` doesn't work.
@@ -29,7 +29,7 @@ Useful when running over SSH with port forwarding, or when `webbrowser.open()` d
 Prints the URL and prompts the user to paste the callback URL back. No local server needed:
 
 ```python
-client = codex_py.CodexClient(headless=True)
+client = codex_open_client.CodexClient(headless=True)
 ```
 
 Works anywhere — Docker containers, remote servers, CI environments.
@@ -45,7 +45,7 @@ def my_handler(url: str) -> str:
     # Get the callback URL back however you want
     return input("Paste redirect URL: ").strip()
 
-client = codex_py.CodexClient(login_handler=my_handler)
+client = codex_open_client.CodexClient(login_handler=my_handler)
 ```
 
 This is the best option for integrating into a larger application — you control how the URL is presented (GUI dialog, Slack message, email, etc.) and how the callback is collected.
@@ -61,7 +61,7 @@ All of this happens automatically in the `CodexClient` constructor. You never ne
 ## Custom Token Path
 
 ```python
-client = codex_py.CodexClient(token_path="~/.myapp/tokens.json")
+client = codex_open_client.CodexClient(token_path="~/.myapp/tokens.json")
 ```
 
 ## Two-Step Login (Advanced)
@@ -70,14 +70,14 @@ For frameworks where you can't block on user input, use the two-step flow:
 
 ```python
 # Step 1: Get the OAuth URL
-auth = codex_py.start_login()
+auth = codex_open_client.start_login()
 print(auth.url)  # Present this to the user
 
 # ... user authenticates in their browser ...
 # ... collect the callback URL somehow ...
 
 # Step 2: Exchange the callback for tokens
-tokens = codex_py.finish_login(auth, callback_url=callback_url)
+tokens = codex_open_client.finish_login(auth, callback_url=callback_url)
 print(tokens.access_token)
 ```
 
@@ -87,11 +87,11 @@ If you don't need a full client, you can use the auth functions directly:
 
 ```python
 # Get a token (handles cache + refresh + login)
-token = codex_py.get_token()
+token = codex_open_client.get_token()
 
 # Build headers for manual requests
-headers = codex_py.build_headers(token)
+headers = codex_open_client.build_headers(token)
 
 # Extract account ID from a token
-account_id = codex_py.get_account_id(token)
+account_id = codex_open_client.get_account_id(token)
 ```

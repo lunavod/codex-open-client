@@ -1,7 +1,7 @@
-site_name: codex-py
+site_name: codex-open-client
 site_description: Python client for OpenAI Codex — use your ChatGPT subscription for API access
-repo_url: https://github.com/lunavod/codex-py
-repo_name: lunavod/codex-py
+repo_url: https://github.com/lunavod/codex-open-client
+repo_name: lunavod/codex-open-client
 
 theme:
   name: material

@@ -2,7 +2,7 @@ import base64
 import json
 from typing import Any
 
-from codex_py._api import _decode_jwt_payload, build_headers, get_account_id
+from codex_open_client._api import _decode_jwt_payload, build_headers, get_account_id
 
 
 def _make_jwt(payload: dict[str, Any]) -> str:

@@ -12,7 +12,7 @@ with client.responses.create(
     stream=True,
 ) as stream:
     for event in stream:
-        if isinstance(event, codex_py.ResponseOutputTextDeltaEvent):
+        if isinstance(event, codex_open_client.ResponseOutputTextDeltaEvent):
             print(event.delta, end="", flush=True)
     print()
 ```
@@ -42,7 +42,7 @@ stream = client.responses.create(..., stream=True)
 
 # First pass — print deltas
 for event in stream:
-    if isinstance(event, codex_py.ResponseOutputTextDeltaEvent):
+    if isinstance(event, codex_open_client.ResponseOutputTextDeltaEvent):
         print(event.delta, end="")
 
 # Second pass — count events (uses cached events, no network)

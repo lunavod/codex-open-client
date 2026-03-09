@@ -11,7 +11,7 @@ from urllib.parse import parse_qs, urlencode, urlparse
 
 import httpx
 
-from codex_py._config import (
+from codex_open_client._config import (
     AUDIENCE,
     AUTH_ENDPOINT,
     CLIENT_ID,
@@ -23,7 +23,7 @@ from codex_py._config import (
     load_tokens,
     save_tokens,
 )
-from codex_py._pkce import generate_challenge, generate_verifier
+from codex_open_client._pkce import generate_challenge, generate_verifier
 
 
 @dataclass
@@ -187,7 +187,7 @@ def login(
         code = _extract_code_from_url(callback_url)
     else:
         # Interactive mode: start local server
-        from codex_py._server import wait_for_callback
+        from codex_open_client._server import wait_for_callback
 
         if no_browser:
             print("Open this URL in your browser to authenticate:\n")
@@ -248,9 +248,9 @@ def start_login() -> PendingLogin:
 
     Example::
 
-        auth = codex_py.start_login()
+        auth = codex_open_client.start_login()
         # ... show auth.url to the user, let them authenticate ...
-        tokens = codex_py.finish_login(auth, callback_url="http://localhost:1455/...")
+        tokens = codex_open_client.finish_login(auth, callback_url="http://localhost:1455/...")
     """
     verifier = generate_verifier()
     challenge = generate_challenge(verifier)

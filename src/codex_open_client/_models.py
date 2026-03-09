@@ -9,12 +9,12 @@ from typing import TYPE_CHECKING, Any
 
 import httpx
 
-from codex_py._config import CODEX_BASE_URL, CODEX_CLIENT_VERSION
-from codex_py._errors import APIConnectionError, APITimeoutError, raise_for_status
-from codex_py._types import Model
+from codex_open_client._config import CODEX_BASE_URL, CODEX_CLIENT_VERSION
+from codex_open_client._errors import APIConnectionError, APITimeoutError, raise_for_status
+from codex_open_client._types import Model
 
 if TYPE_CHECKING:
-    from codex_py._client import CodexClient
+    from codex_open_client._client import CodexClient
 
 _CACHE_TTL = 300  # 5 minutes
 

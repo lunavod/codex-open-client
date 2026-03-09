@@ -1,7 +1,13 @@
 """Tests for _responses.py — input serialization and body building."""
 
-from codex_py._responses import _serialize_dataclass, _serialize_input, _serialize_tool
-from codex_py._types import FunctionCallOutput, FunctionTool, InputMessage, Reasoning, TextConfig
+from codex_open_client._responses import _serialize_dataclass, _serialize_input, _serialize_tool
+from codex_open_client._types import (
+    FunctionCallOutput,
+    FunctionTool,
+    InputMessage,
+    Reasoning,
+    TextConfig,
+)
 
 
 def test_serialize_string_input() -> None:

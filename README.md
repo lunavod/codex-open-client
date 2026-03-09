@@ -1,26 +1,26 @@
-# codex-py
+# codex-open-client
 
-[![PyPI](https://img.shields.io/pypi/v/codex-py)](https://pypi.org/project/codex-py/)
-[![Python](https://img.shields.io/pypi/pyversions/codex-py)](https://pypi.org/project/codex-py/)
-[![License](https://img.shields.io/github/license/lunavod/codex-py)](LICENSE)
-[![CI](https://github.com/lunavod/codex-py/actions/workflows/ci.yml/badge.svg)](https://github.com/lunavod/codex-py/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/codex-open-client)](https://pypi.org/project/codex-open-client/)
+[![Python](https://img.shields.io/pypi/pyversions/codex-open-client)](https://pypi.org/project/codex-open-client/)
+[![License](https://img.shields.io/github/license/lunavod/codex-open-client)](LICENSE)
+[![CI](https://github.com/lunavod/codex-open-client/actions/workflows/ci.yml/badge.svg)](https://github.com/lunavod/codex-open-client/actions/workflows/ci.yml)
 
 Python client for OpenAI Codex — use your ChatGPT Plus/Pro subscription for API access.
 
-**[Documentation](https://lunavod.github.io/codex-py/)**
+**[Documentation](https://lunavod.github.io/codex-open-client/)**
 
 ## Installation
 
 ```bash
-pip install codex-py
+pip install codex-open-client
 ```
 
 ## Quick Start
 
 ```python
-import codex_py
+import codex_open_client
 
-client = codex_py.CodexClient()
+client = codex_open_client.CodexClient()
 
 response = client.responses.create(
     model="gpt-5.1-codex-mini",
@@ -38,25 +38,25 @@ Multiple ways to authenticate, depending on your environment:
 
 ```python
 # Default — opens browser, local server catches the callback
-client = codex_py.CodexClient()
+client = codex_open_client.CodexClient()
 
 # Headless — prints URL, you paste the redirect URL back (servers, Docker, CI)
-client = codex_py.CodexClient(headless=True)
+client = codex_open_client.CodexClient(headless=True)
 
 # Custom handler — full control over the auth UX (GUI apps, bots, web apps)
 def my_handler(url: str) -> str:
     send_url_to_user(url)
     return get_callback_url_from_user()
 
-client = codex_py.CodexClient(login_handler=my_handler)
+client = codex_open_client.CodexClient(login_handler=my_handler)
 ```
 
 For async or multi-step flows, use the two-step API:
 
 ```python
-auth = codex_py.start_login()
+auth = codex_open_client.start_login()
 # present auth.url to the user, collect callback URL however you want
-tokens = codex_py.finish_login(auth, callback_url="http://localhost:1455/...")
+tokens = codex_open_client.finish_login(auth, callback_url="http://localhost:1455/...")
 ```
 
 ## Streaming
@@ -69,7 +69,7 @@ with client.responses.create(
     stream=True,
 ) as stream:
     for event in stream:
-        if isinstance(event, codex_py.ResponseOutputTextDeltaEvent):
+        if isinstance(event, codex_open_client.ResponseOutputTextDeltaEvent):
             print(event.delta, end="", flush=True)
     print()
 ```
@@ -79,7 +79,7 @@ with client.responses.create(
 ```python
 import json
 
-tool = codex_py.FunctionTool(
+tool = codex_open_client.FunctionTool(
     name="get_weather",
     description="Get weather for a city.",
     parameters={

@@ -53,9 +53,9 @@ response2 = client.responses.create(
     model="gpt-5.1-codex-mini",
     instructions="You are helpful.",
     input=[
-        codex_py.InputMessage(role="user", content="My name is Alice."),
+        codex_open_client.InputMessage(role="user", content="My name is Alice."),
         *response1.output,
-        codex_py.InputMessage(role="user", content="What's my name?"),
+        codex_open_client.InputMessage(role="user", content="What's my name?"),
     ],
 )
 print(response2.output_text)  # "Your name is Alice."
@@ -68,7 +68,7 @@ print(response2.output_text)  # "Your name is Alice."
     ```python
     input_items = [
         item for item in response.output
-        if not isinstance(item, codex_py.ResponseReasoningItem)
+        if not isinstance(item, codex_open_client.ResponseReasoningItem)
     ]
     ```
 
@@ -97,7 +97,7 @@ response = client.responses.create(
     model="gpt-5.1-codex-mini",
     instructions="Think step by step.",
     input="What is 15% of 847?",
-    reasoning=codex_py.Reasoning(effort="high", summary="auto"),
+    reasoning=codex_open_client.Reasoning(effort="high", summary="auto"),
 )
 
 print(response.reasoning_summary)  # summary of the thinking process

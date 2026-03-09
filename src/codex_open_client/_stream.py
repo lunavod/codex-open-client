@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 from typing import Any, Iterator, Protocol
 
-from codex_py._errors import StreamError
-from codex_py._types import (
+from codex_open_client._errors import StreamError
+from codex_open_client._types import (
     OutputText,
     ReasoningSummary,
     Response,

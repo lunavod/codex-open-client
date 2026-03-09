@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "codex-py"
+name = "codex-open-client"
 dynamic = ["version"]
 description = "Python client for OpenAI Codex — use your ChatGPT subscription for API access"
 readme = "README.md"
@@ -63,7 +63,7 @@ warn_return_any = true
 warn_unused_ignores = true
 
 [tool.hatch.version]
-path = "src/codex_py/_version.py"
+path = "src/codex_open_client/_version.py"
 
 [[tool.mypy.overrides]]
 module = "openai.*"

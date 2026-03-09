@@ -1,7 +1,7 @@
 import base64
 import hashlib
 
-from codex_py._pkce import generate_challenge, generate_verifier
+from codex_open_client._pkce import generate_challenge, generate_verifier
 
 
 def test_verifier_length() -> None:

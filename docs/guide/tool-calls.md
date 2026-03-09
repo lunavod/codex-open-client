@@ -6,11 +6,11 @@ The Codex API supports function calling — the model can invoke tools you defin
 
 ```python
 import json
-import codex_py
+import codex_open_client
 
-client = codex_py.CodexClient()
+client = codex_open_client.CodexClient()
 
-weather_tool = codex_py.FunctionTool(
+weather_tool = codex_open_client.FunctionTool(
     name="get_weather",
     description="Get the current weather for a city.",
     parameters={
@@ -65,10 +65,10 @@ if response.tool_calls:
     # Feed the result back — filter out reasoning items
     input_items = [
         item for item in response.output
-        if not isinstance(item, codex_py.ResponseReasoningItem)
+        if not isinstance(item, codex_open_client.ResponseReasoningItem)
     ]
     input_items.append(
-        codex_py.FunctionCallOutput(
+        codex_open_client.FunctionCallOutput(
             call_id=response.tool_calls[0].call_id,
             output=json.dumps(result),
         )
@@ -86,7 +86,7 @@ if response.tool_calls:
 !!! note "Filter reasoning items"
     When feeding `response.output` back as input, always filter out
     `ResponseReasoningItem` objects. They contain server-side IDs that can't
-    be referenced when `store=false` (which codex-py always sets).
+    be referenced when `store=false` (which codex-open-client always sets).
 
 ## Tool Choice
 

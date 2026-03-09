@@ -142,7 +142,7 @@ and still under development. The v2 protocol uses the beta header
 `OpenAI-Beta: responses_websockets=2026-02-06`. Falls back to REST+SSE if the
 WebSocket handshake fails (HTTP 426).
 
-`codex-py` does not implement WebSocket transport yet.
+`codex-open-client` does not implement WebSocket transport yet.
 
 ## Key Source Files in the Codex CLI
 

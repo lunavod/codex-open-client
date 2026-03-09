@@ -8,10 +8,10 @@ from typing import TYPE_CHECKING, Any, Literal, overload
 
 import httpx
 
-from codex_py._config import CODEX_BASE_URL
-from codex_py._errors import APIConnectionError, APITimeoutError, raise_for_status
-from codex_py._stream import ResponseStream
-from codex_py._types import (
+from codex_open_client._config import CODEX_BASE_URL
+from codex_open_client._errors import APIConnectionError, APITimeoutError, raise_for_status
+from codex_open_client._stream import ResponseStream
+from codex_open_client._types import (
     FunctionCallOutput,
     FunctionTool,
     InputMessage,
@@ -24,7 +24,7 @@ from codex_py._types import (
 )
 
 if TYPE_CHECKING:
-    from codex_py._client import CodexClient
+    from codex_open_client._client import CodexClient
 
 # Input item types that can be serialized
 _InputItem = (
@@ -182,7 +182,7 @@ class Responses:
         """Send the request with retry logic for 429/5xx."""
         import time
 
-        from codex_py._errors import _parse_retry_after
+        from codex_open_client._errors import _parse_retry_after
 
         max_retries = self._client._max_retries
 

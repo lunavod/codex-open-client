@@ -1,9 +1,16 @@
-"""codex-py — Python client for OpenAI Codex."""
+"""codex-open-client — Python client for OpenAI Codex."""
 
-from codex_py._api import build_headers, get_account_id
-from codex_py._auth import PendingLogin, finish_login, get_token, login, refresh, start_login
-from codex_py._client import CodexClient
-from codex_py._errors import (
+from codex_open_client._api import build_headers, get_account_id
+from codex_open_client._auth import (
+    PendingLogin,
+    finish_login,
+    get_token,
+    login,
+    refresh,
+    start_login,
+)
+from codex_open_client._client import CodexClient
+from codex_open_client._errors import (
     APIConnectionError,
     APIError,
     APITimeoutError,
@@ -16,7 +23,7 @@ from codex_py._errors import (
     ServerError,
     StreamError,
 )
-from codex_py._types import (
+from codex_open_client._types import (
     ContentPart,
     FunctionCallOutput,
     FunctionTool,
@@ -53,7 +60,7 @@ from codex_py._types import (
     Tool,
     Usage,
 )
-from codex_py._version import __version__
+from codex_open_client._version import __version__
 
 __all__ = [
     # Client

@@ -17,7 +17,7 @@ from typing import Any
 
 import pytest
 
-import codex_py
+import codex_open_client
 
 pytestmark = pytest.mark.interactive
 
@@ -43,14 +43,14 @@ def test_login_auto(tmp_path: Path) -> None:
     print("\n=== AUTO LOGIN TEST ===")
     print("A browser window will open. Please authenticate.\n")
 
-    tokens = codex_py.login(token_path=tmp_path / "auth.json")
+    tokens = codex_open_client.login(token_path=tmp_path / "auth.json")
 
     assert tokens.access_token
     assert isinstance(tokens.access_token, str)
     assert len(tokens.access_token) > 0
     print(f"\n  Got access token ({len(tokens.access_token)} chars)")
 
-    headers = codex_py.build_headers(tokens.access_token)
+    headers = codex_open_client.build_headers(tokens.access_token)
     assert "Authorization" in headers
     assert "ChatGPT-Account-ID" in headers
     print(f"  Account ID: {headers['ChatGPT-Account-ID']}")
@@ -66,7 +66,7 @@ def test_login_no_browser(tmp_path: Path) -> None:
     print("\n=== NO-BROWSER LOGIN TEST ===")
     print("A URL will be printed below. Open it in your browser.\n")
 
-    tokens = codex_py.login(
+    tokens = codex_open_client.login(
         no_browser=True,
         token_path=tmp_path / "auth.json",
     )
@@ -87,7 +87,7 @@ def test_login_headless(tmp_path: Path) -> None:
     print("\n=== HEADLESS LOGIN TEST ===")
     print("A URL will be printed. After authenticating, paste the redirect URL.\n")
 
-    tokens = codex_py.login(
+    tokens = codex_open_client.login(
         headless=True,
         token_path=tmp_path / "auth.json",
     )
@@ -107,7 +107,7 @@ def test_start_finish_login(tmp_path: Path) -> None:
     """
     print("\n=== TWO-STEP LOGIN TEST ===")
 
-    auth = codex_py.start_login()
+    auth = codex_open_client.start_login()
     assert auth.url
     assert "authorize" in auth.url
 
@@ -118,7 +118,7 @@ def test_start_finish_login(tmp_path: Path) -> None:
 
     callback_url = input("Paste redirect URL: ").strip()
 
-    tokens = codex_py.finish_login(
+    tokens = codex_open_client.finish_login(
         auth,
         callback_url=callback_url,
         token_path=tmp_path / "auth.json",
@@ -128,7 +128,7 @@ def test_start_finish_login(tmp_path: Path) -> None:
     assert len(tokens.access_token) > 0
     print(f"\n  Got access token ({len(tokens.access_token)} chars)")
 
-    from codex_py._api import build_headers
+    from codex_open_client._api import build_headers
 
     headers = build_headers(tokens.access_token)
     assert "ChatGPT-Account-ID" in headers
@@ -152,7 +152,7 @@ def test_login_handler(tmp_path: Path) -> None:
         print("After authenticating, copy the full redirect URL.\n")
         return input("Paste redirect URL: ").strip()
 
-    client = codex_py.CodexClient(
+    client = codex_open_client.CodexClient(
         login_handler=my_handler,
         token_path=tmp_path / "auth.json",
     )

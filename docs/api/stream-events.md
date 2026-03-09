@@ -6,36 +6,36 @@ Use `isinstance()` checks to handle specific event types when iterating a `Respo
 
 ## Response Lifecycle Events
 
-::: codex_py.ResponseCreatedEvent
+::: codex_open_client.ResponseCreatedEvent
 
-::: codex_py.ResponseInProgressEvent
+::: codex_open_client.ResponseInProgressEvent
 
-::: codex_py.ResponseCompletedEvent
+::: codex_open_client.ResponseCompletedEvent
 
-::: codex_py.ResponseFailedEvent
+::: codex_open_client.ResponseFailedEvent
 
-::: codex_py.ResponseIncompleteEvent
+::: codex_open_client.ResponseIncompleteEvent
 
 ## Text Events
 
-::: codex_py.ResponseOutputTextDeltaEvent
+::: codex_open_client.ResponseOutputTextDeltaEvent
 
-::: codex_py.ResponseOutputTextDoneEvent
+::: codex_open_client.ResponseOutputTextDoneEvent
 
 ## Output Item Events
 
-::: codex_py.ResponseOutputItemAddedEvent
+::: codex_open_client.ResponseOutputItemAddedEvent
 
-::: codex_py.ResponseOutputItemDoneEvent
+::: codex_open_client.ResponseOutputItemDoneEvent
 
 ## Function Call Events
 
-::: codex_py.ResponseFunctionCallArgumentsDeltaEvent
+::: codex_open_client.ResponseFunctionCallArgumentsDeltaEvent
 
-::: codex_py.ResponseFunctionCallArgumentsDoneEvent
+::: codex_open_client.ResponseFunctionCallArgumentsDoneEvent
 
 ## Reasoning Events
 
-::: codex_py.ResponseReasoningSummaryTextDeltaEvent
+::: codex_open_client.ResponseReasoningSummaryTextDeltaEvent
 
-::: codex_py.ResponseReasoningSummaryTextDoneEvent
+::: codex_open_client.ResponseReasoningSummaryTextDoneEvent

@@ -2,7 +2,7 @@
 
 The main entry point for the Codex API.
 
-::: codex_py.CodexClient
+::: codex_open_client.CodexClient
     options:
       members:
         - __init__
@@ -12,14 +12,14 @@ The main entry point for the Codex API.
 
 ## Responses
 
-::: codex_py._responses.Responses
+::: codex_open_client._responses.Responses
     options:
       members:
         - create
 
 ## ResponseStream
 
-::: codex_py._stream.ResponseStream
+::: codex_open_client._stream.ResponseStream
     options:
       members:
         - __iter__
@@ -30,7 +30,7 @@ The main entry point for the Codex API.
 
 ## Models
 
-::: codex_py._models.Models
+::: codex_open_client._models.Models
     options:
       members:
         - list
@@ -39,34 +39,34 @@ The main entry point for the Codex API.
 
 ### login
 
-::: codex_py.login
+::: codex_open_client.login
 
 ### get_token
 
-::: codex_py.get_token
+::: codex_open_client.get_token
 
 ### refresh
 
-::: codex_py.refresh
+::: codex_open_client.refresh
 
 ### start_login
 
-::: codex_py.start_login
+::: codex_open_client.start_login
 
 ### finish_login
 
-::: codex_py.finish_login
+::: codex_open_client.finish_login
 
 ### PendingLogin
 
-::: codex_py.PendingLogin
+::: codex_open_client.PendingLogin
 
 ## Helper Functions
 
 ### build_headers
 
-::: codex_py.build_headers
+::: codex_open_client.build_headers
 
 ### get_account_id
 
-::: codex_py.get_account_id
+::: codex_open_client.get_account_id

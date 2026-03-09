@@ -4,47 +4,47 @@ All types are dataclasses with `slots=True`.
 
 ## Response
 
-::: codex_py.Response
+::: codex_open_client.Response
     options:
       members:
         - output_text
         - reasoning_summary
         - tool_calls
 
-::: codex_py.Usage
+::: codex_open_client.Usage
 
-::: codex_py.ResponseError
+::: codex_open_client.ResponseError
 
 ## Output Types
 
-::: codex_py.ResponseOutputMessage
+::: codex_open_client.ResponseOutputMessage
 
-::: codex_py.OutputText
+::: codex_open_client.OutputText
 
-::: codex_py.ResponseFunctionToolCall
+::: codex_open_client.ResponseFunctionToolCall
 
-::: codex_py.ResponseReasoningItem
+::: codex_open_client.ResponseReasoningItem
 
-::: codex_py.ReasoningSummary
+::: codex_open_client.ReasoningSummary
 
 ## Input Types
 
-::: codex_py.InputMessage
+::: codex_open_client.InputMessage
 
-::: codex_py.InputText
+::: codex_open_client.InputText
 
-::: codex_py.InputImage
+::: codex_open_client.InputImage
 
-::: codex_py.FunctionCallOutput
+::: codex_open_client.FunctionCallOutput
 
 ## Tools & Config
 
-::: codex_py.FunctionTool
+::: codex_open_client.FunctionTool
 
-::: codex_py.Reasoning
+::: codex_open_client.Reasoning
 
-::: codex_py.TextConfig
+::: codex_open_client.TextConfig
 
 ## Model
 
-::: codex_py.Model
+::: codex_open_client.Model

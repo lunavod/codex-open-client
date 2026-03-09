@@ -3,13 +3,13 @@
 ## Installation
 
 ```bash
-pip install codex-py
+pip install codex-open-client
 ```
 
 Or with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv add codex-py
+uv add codex-open-client
 ```
 
 ## First Login
@@ -17,9 +17,9 @@ uv add codex-py
 When you create a `CodexClient` for the first time, it opens your browser for OAuth authentication:
 
 ```python
-import codex_py
+import codex_open_client
 
-client = codex_py.CodexClient()
+client = codex_open_client.CodexClient()
 ```
 
 1. Your browser opens the OpenAI login page
@@ -33,9 +33,9 @@ On subsequent runs, cached tokens are reused automatically. When they expire, th
 ## Your First Request
 
 ```python
-import codex_py
+import codex_open_client
 
-client = codex_py.CodexClient()
+client = codex_open_client.CodexClient()
 
 response = client.responses.create(
     model="gpt-5.1-codex-mini",
@@ -58,7 +58,7 @@ with client.responses.create(
     stream=True,
 ) as stream:
     for event in stream:
-        if isinstance(event, codex_py.ResponseOutputTextDeltaEvent):
+        if isinstance(event, codex_open_client.ResponseOutputTextDeltaEvent):
             print(event.delta, end="", flush=True)
     print()
 ```

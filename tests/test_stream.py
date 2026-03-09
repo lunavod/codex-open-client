@@ -4,9 +4,14 @@ from typing import Any
 
 import pytest
 
-from codex_py._errors import StreamError
-from codex_py._stream import ResponseStream, _parse_response, _parse_sse_event, iter_sse_lines
-from codex_py._types import (
+from codex_open_client._errors import StreamError
+from codex_open_client._stream import (
+    ResponseStream,
+    _parse_response,
+    _parse_sse_event,
+    iter_sse_lines,
+)
+from codex_open_client._types import (
     ResponseCompletedEvent,
     ResponseCreatedEvent,
     ResponseFailedEvent,

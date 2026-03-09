@@ -2,7 +2,7 @@ import json
 import time
 from pathlib import Path
 
-from codex_py._config import TokenData, load_tokens, save_tokens
+from codex_open_client._config import TokenData, load_tokens, save_tokens
 
 
 def test_token_not_expired() -> None:

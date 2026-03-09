@@ -21,9 +21,9 @@ CodexError
 ## Catching Errors
 
 ```python
-import codex_py
+import codex_open_client
 
-client = codex_py.CodexClient()
+client = codex_open_client.CodexClient()
 
 try:
     response = client.responses.create(
@@ -31,18 +31,18 @@ try:
         instructions="Be helpful.",
         input="Hello!",
     )
-except codex_py.RateLimitError as e:
+except codex_open_client.RateLimitError as e:
     print(f"Rate limited. Retry after {e.retry_after}s")
-except codex_py.AuthError as e:
+except codex_open_client.AuthError as e:
     print(f"Auth failed ({e.status_code}): {e.message}")
     client.login()  # re-authenticate
-except codex_py.ContextWindowError:
+except codex_open_client.ContextWindowError:
     print("Input too long — reduce context")
-except codex_py.ServerError as e:
+except codex_open_client.ServerError as e:
     print(f"Server error ({e.status_code}): {e.message}")
-except codex_py.APIConnectionError as e:
+except codex_open_client.APIConnectionError as e:
     print(f"Network error: {e.message}")
-except codex_py.CodexError as e:
+except codex_open_client.CodexError as e:
     print(f"Unexpected error: {e}")
 ```
 
@@ -76,13 +76,13 @@ The client automatically retries on `429` and `5xx` errors with exponential back
 
 ```python
 # Default: 2 retries
-client = codex_py.CodexClient()
+client = codex_open_client.CodexClient()
 
 # More retries
-client = codex_py.CodexClient(max_retries=5)
+client = codex_open_client.CodexClient(max_retries=5)
 
 # No retries
-client = codex_py.CodexClient(max_retries=0)
+client = codex_open_client.CodexClient(max_retries=0)
 ```
 
 For `429` errors, the client uses the `retry_after` value from the error message if available, otherwise falls back to exponential backoff (1s, 2s, 4s, ...).
@@ -91,10 +91,10 @@ For `429` errors, the client uses the `retry_after` value from the error message
 
 ```python
 # Default timeout: 120 seconds
-client = codex_py.CodexClient()
+client = codex_open_client.CodexClient()
 
 # Custom default timeout
-client = codex_py.CodexClient(timeout=60.0)
+client = codex_open_client.CodexClient(timeout=60.0)
 
 # Per-request timeout
 response = client.responses.create(

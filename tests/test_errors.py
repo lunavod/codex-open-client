@@ -2,7 +2,7 @@
 
 import pytest
 
-from codex_py._errors import (
+from codex_open_client._errors import (
     APIConnectionError,
     APIError,
     APITimeoutError,

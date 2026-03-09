@@ -1,4 +1,4 @@
-from codex_py import __version__
+from codex_open_client import __version__
 
 
 def test_version() -> None:

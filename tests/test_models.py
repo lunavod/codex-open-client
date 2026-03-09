@@ -1,6 +1,6 @@
 """Tests for _models.py — model parsing and cache."""
 
-from codex_py._models import _ModelsCache, _parse_model
+from codex_open_client._models import _ModelsCache, _parse_model
 
 
 def test_parse_model_full() -> None:

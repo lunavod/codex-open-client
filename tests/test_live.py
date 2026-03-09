@@ -6,9 +6,9 @@ Never run by default. Run explicitly with:
 
 import pytest
 
-from codex_py._api import build_headers, get_account_id
-from codex_py._auth import get_token
-from codex_py._config import CODEX_BASE_URL, DEFAULT_TOKEN_PATH, load_tokens
+from codex_open_client._api import build_headers, get_account_id
+from codex_open_client._auth import get_token
+from codex_open_client._config import CODEX_BASE_URL, DEFAULT_TOKEN_PATH, load_tokens
 
 pytestmark = pytest.mark.live
 
@@ -51,7 +51,7 @@ def test_token_refresh() -> None:
     if tokens.refresh_token is None:
         pytest.skip("No refresh token available")
 
-    from codex_py._auth import refresh
+    from codex_open_client._auth import refresh
 
     new_tokens = refresh(tokens.refresh_token, DEFAULT_TOKEN_PATH)
     assert new_tokens.access_token

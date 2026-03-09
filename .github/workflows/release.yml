@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv run ruff check src/ tests/
-      - run: uv run mypy src/codex_py/ tests/ --strict
+      - run: uv run mypy src/codex_open_client/ tests/ --strict
       - run: uv run pytest -x -q
 
   check-version:
@@ -26,7 +26,7 @@ jobs:
       - name: Verify tag matches package version
         run: |
           TAG_VERSION="${GITHUB_REF#refs/tags/v}"
-          PKG_VERSION=$(grep '__version__' src/codex_py/_version.py | sed "s/.*\"\(.*\)\"/\1/")
+          PKG_VERSION=$(grep '__version__' src/codex_open_client/_version.py | sed "s/.*\"\(.*\)\"/\1/")
           if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
             echo "::error::Tag version ($TAG_VERSION) does not match package version ($PKG_VERSION)"
             exit 1
@@ -90,10 +90,10 @@ jobs:
 
           if echo "$VERSION" | grep -qP '(a|b|rc)\d+'; then
             PRERELEASE="--prerelease"
-            TITLE="codex-py $VERSION (pre-release)"
+            TITLE="codex-open-client $VERSION (pre-release)"
           else
             PRERELEASE=""
-            TITLE="codex-py $VERSION"
+            TITLE="codex-open-client $VERSION"
           fi
 
           gh release create "$TAG" \

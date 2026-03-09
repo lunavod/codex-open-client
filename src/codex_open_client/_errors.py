@@ -6,7 +6,7 @@ import re
 
 
 class CodexError(Exception):
-    """Base exception for all codex-py errors."""
+    """Base exception for all codex-open-client errors."""
 
 
 class APIError(CodexError):

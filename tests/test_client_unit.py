@@ -3,7 +3,7 @@
 import time
 from pathlib import Path
 
-from codex_py._config import TokenData, save_tokens
+from codex_open_client._config import TokenData, save_tokens
 
 
 def test_client_from_cached_token(tmp_path: Path) -> None:
@@ -14,7 +14,7 @@ def test_client_from_cached_token(tmp_path: Path) -> None:
         path,
     )
 
-    from codex_py._client import CodexClient
+    from codex_open_client._client import CodexClient
 
     client = CodexClient(token_path=path)
     assert client.token == "test_token_123"
@@ -36,7 +36,7 @@ def test_client_login_handler(tmp_path: Path) -> None:
         # We just verify the handler is called.
         raise RuntimeError("test: handler was called")
 
-    from codex_py._client import CodexClient
+    from codex_open_client._client import CodexClient
 
     try:
         CodexClient(token_path=path, login_handler=fake_handler)
@@ -61,7 +61,7 @@ def test_client_login_handler_with_cache(tmp_path: Path) -> None:
         handler_called = True
         return ""
 
-    from codex_py._client import CodexClient
+    from codex_open_client._client import CodexClient
 
     client = CodexClient(token_path=path, login_handler=handler)
     assert client.token == "cached"

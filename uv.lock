@@ -168,7 +168,7 @@ wheels = [
 ]
 
 [[package]]
-name = "codex-py"
+name = "codex-open-client"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },

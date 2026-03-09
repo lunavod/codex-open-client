@@ -18,30 +18,30 @@ CodexError
 
 ## Base Classes
 
-::: codex_py.CodexError
+::: codex_open_client.CodexError
 
-::: codex_py.APIError
+::: codex_open_client.APIError
 
-::: codex_py.APIConnectionError
+::: codex_open_client.APIConnectionError
 
 ## API Errors
 
-::: codex_py.AuthError
+::: codex_open_client.AuthError
 
-::: codex_py.RateLimitError
+::: codex_open_client.RateLimitError
 
-::: codex_py.InvalidRequestError
+::: codex_open_client.InvalidRequestError
 
-::: codex_py.ContextWindowError
+::: codex_open_client.ContextWindowError
 
-::: codex_py.QuotaExceededError
+::: codex_open_client.QuotaExceededError
 
-::: codex_py.ServerError
+::: codex_open_client.ServerError
 
 ## Connection Errors
 
-::: codex_py.APITimeoutError
+::: codex_open_client.APITimeoutError
 
 ## Stream Errors
 
-::: codex_py.StreamError
+::: codex_open_client.StreamError

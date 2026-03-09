@@ -7,11 +7,11 @@ from typing import Callable
 
 import httpx
 
-from codex_py._api import build_headers, get_account_id
-from codex_py._auth import get_token
-from codex_py._config import DEFAULT_TOKEN_PATH, load_tokens
-from codex_py._models import Models
-from codex_py._responses import Responses
+from codex_open_client._api import build_headers, get_account_id
+from codex_open_client._auth import get_token
+from codex_open_client._config import DEFAULT_TOKEN_PATH, load_tokens
+from codex_open_client._models import Models
+from codex_open_client._responses import Responses
 
 
 class CodexClient:
@@ -22,9 +22,9 @@ class CodexClient:
 
     Usage::
 
-        import codex_py
+        import codex_open_client
 
-        client = codex_py.CodexClient()
+        client = codex_open_client.CodexClient()
         response = client.responses.create(
             model="gpt-5.1-codex-mini",
             instructions="You are helpful.",
@@ -66,7 +66,7 @@ class CodexClient:
             if tokens is not None and not tokens.is_expired():
                 return tokens.access_token
             if tokens is not None and tokens.refresh_token:
-                from codex_py._auth import refresh
+                from codex_open_client._auth import refresh
 
                 try:
                     tokens = refresh(tokens.refresh_token, self._token_path)
@@ -74,7 +74,7 @@ class CodexClient:
                 except (httpx.HTTPStatusError, RuntimeError, OSError):
                     pass  # Refresh failed, fall through to login handler
             # Use the custom login handler
-            from codex_py._auth import finish_login, start_login
+            from codex_open_client._auth import finish_login, start_login
 
             auth = start_login()
             callback_url = self._login_handler(auth.url)
@@ -93,7 +93,7 @@ class CodexClient:
 
     def login(self) -> None:
         """Re-authenticate, replacing the current token."""
-        from codex_py._auth import login as auth_login
+        from codex_open_client._auth import login as auth_login
 
         tokens = auth_login(
             headless=self._headless,

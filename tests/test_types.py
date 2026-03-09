@@ -1,6 +1,6 @@
 """Tests for _types.py data models."""
 
-from codex_py._types import (
+from codex_open_client._types import (
     FunctionTool,
     InputMessage,
     OutputText,

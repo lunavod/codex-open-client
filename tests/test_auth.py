@@ -1,7 +1,7 @@
 import time
 from pathlib import Path
 
-from codex_py._auth import (
+from codex_open_client._auth import (
     PendingLogin,
     _build_auth_url,
     _extract_code_from_url,
@@ -9,7 +9,7 @@ from codex_py._auth import (
     get_token,
     start_login,
 )
-from codex_py._config import TokenData, save_tokens
+from codex_open_client._config import TokenData, save_tokens
 
 
 def test_build_auth_url_contains_params() -> None:

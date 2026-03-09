@@ -1,15 +1,15 @@
-# codex-py
+# codex-open-client
 
 **Python client for OpenAI Codex** — use your ChatGPT Plus/Pro subscription for API access.
 
-`codex-py` handles OAuth authentication, token management, and provides a typed Python interface to the Codex API at `chatgpt.com/backend-api/codex`.
+`codex-open-client` handles OAuth authentication, token management, and provides a typed Python interface to the Codex API at `chatgpt.com/backend-api/codex`.
 
 ## Quick Example
 
 ```python
-import codex_py
+import codex_open_client
 
-client = codex_py.CodexClient()
+client = codex_open_client.CodexClient()
 
 response = client.responses.create(
     model="gpt-5.1-codex-mini",
