@@ -73,6 +73,7 @@ jobs:
           else
             # Stable: deploy under "X.Y" and update "latest" alias
             uv run mike deploy "${MINOR_VERSION}" latest --update-aliases --push
+            uv run mike set-default latest --push
           fi
 
   github-release:
