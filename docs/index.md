@@ -23,6 +23,7 @@ print(response.output_text)
 
 - **Automatic authentication** — OAuth PKCE flow with token caching and refresh
 - **Typed responses** — dataclass-based types for all API objects
+- **Structured output** — `parse()` with Pydantic models or manual JSON schemas
 - **Streaming** — iterate over server-sent events as they arrive
 - **Tool calls** — define functions, handle tool call roundtrips
 - **Retry logic** — built-in retry with exponential backoff for 429/5xx

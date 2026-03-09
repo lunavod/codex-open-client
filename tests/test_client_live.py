@@ -237,3 +237,148 @@ def test_tool_call_roundtrip(client: codex_open_client.CodexClient) -> None:
 
     assert response2.status == "completed"
     assert "10" in response2.output_text
+
+
+def test_structured_output_json_schema(client: codex_open_client.CodexClient) -> None:
+    """Structured output via TextConfig with ResponseFormatJsonSchema."""
+    import json
+
+    response = client.responses.create(
+        model="gpt-5.1-codex-mini",
+        instructions="Extract the person info from the input.",
+        input="John Smith is 30 years old and lives in New York.",
+        text=codex_open_client.TextConfig(
+            format=codex_open_client.ResponseFormatJsonSchema(
+                name="person",
+                schema={
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "age": {"type": "integer"},
+                        "city": {"type": "string"},
+                    },
+                    "required": ["name", "age", "city"],
+                    "additionalProperties": False,
+                },
+                strict=True,
+            ),
+        ),
+    )
+    assert response.status == "completed"
+    data = json.loads(response.output_text)
+    assert data["name"] == "John Smith"
+    assert data["age"] == 30
+    assert data["city"] == "New York"
+
+
+def test_structured_output_json_object(client: codex_open_client.CodexClient) -> None:
+    """Free-form JSON output via ResponseFormatJsonObject."""
+    import json
+
+    response = client.responses.create(
+        model="gpt-5.1-codex-mini",
+        instructions="Reply with a JSON object containing a 'greeting' key.",
+        input="Say hello. Respond in JSON.",
+        text=codex_open_client.TextConfig(
+            format=codex_open_client.ResponseFormatJsonObject(),
+        ),
+    )
+    assert response.status == "completed"
+    data = json.loads(response.output_text)
+    assert "greeting" in data
+
+
+def test_structured_output_streaming(client: codex_open_client.CodexClient) -> None:
+    """Structured output should also work when streaming."""
+    import json
+
+    stream = client.responses.create(
+        model="gpt-5.1-codex-mini",
+        instructions="Extract the color.",
+        input="The sky is blue.",
+        stream=True,
+        text=codex_open_client.TextConfig(
+            format=codex_open_client.ResponseFormatJsonSchema(
+                name="color_info",
+                schema={
+                    "type": "object",
+                    "properties": {
+                        "color": {"type": "string"},
+                    },
+                    "required": ["color"],
+                    "additionalProperties": False,
+                },
+                strict=True,
+            ),
+        ),
+    )
+    resp = stream.get_final_response()
+    assert resp.status == "completed"
+    data = json.loads(resp.output_text)
+    assert data["color"].lower() == "blue"
+
+
+def test_parse_pydantic_model(client: codex_open_client.CodexClient) -> None:
+    """parse() should return a ParsedResponse with a deserialized Pydantic model."""
+    from pydantic import BaseModel
+
+    class Person(BaseModel):
+        name: str
+        age: int
+        city: str
+
+    parsed = client.responses.parse(
+        model="gpt-5.1-codex-mini",
+        instructions="Extract the person info from the input.",
+        input="John Smith is 30 years old and lives in New York.",
+        text_format=Person,
+    )
+    assert isinstance(parsed, codex_open_client.ParsedResponse)
+    assert isinstance(parsed.output_parsed, Person)
+    assert parsed.output_parsed.name == "John Smith"
+    assert parsed.output_parsed.age == 30
+    assert parsed.output_parsed.city == "New York"
+    assert parsed.status == "completed"
+    # The raw response is still accessible
+    assert parsed.output_text
+    assert parsed.response.id
+
+
+def test_parse_nested_model(client: codex_open_client.CodexClient) -> None:
+    """parse() should work with nested Pydantic models."""
+    from pydantic import BaseModel
+
+    class Address(BaseModel):
+        city: str
+        country: str
+
+    class Person(BaseModel):
+        name: str
+        address: Address
+
+    parsed = client.responses.parse(
+        model="gpt-5.1-codex-mini",
+        instructions="Extract the person info.",
+        input="Alice lives in Paris, France.",
+        text_format=Person,
+    )
+    assert parsed.output_parsed.name == "Alice"
+    assert parsed.output_parsed.address.city == "Paris"
+    assert parsed.output_parsed.address.country == "France"
+
+
+def test_parse_list_field(client: codex_open_client.CodexClient) -> None:
+    """parse() should handle models with list fields."""
+    from pydantic import BaseModel
+
+    class Colors(BaseModel):
+        colors: list[str]
+
+    parsed = client.responses.parse(
+        model="gpt-5.1-codex-mini",
+        instructions="Extract all colors mentioned.",
+        input="The sky is blue and the grass is green.",
+        text_format=Colors,
+    )
+    assert "blue" in [c.lower() for c in parsed.output_parsed.colors]
+    assert "green" in [c.lower() for c in parsed.output_parsed.colors]

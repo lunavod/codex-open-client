@@ -34,7 +34,7 @@ Issues = "https://github.com/lunavod/codex-py/issues"
 Changelog = "https://github.com/lunavod/codex-py/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-openai = ["openai>=1.0"]
+pydantic = ["pydantic>=2.0"]
 dev = [
     "mypy>=1.0",
     "pytest>=8.0",
@@ -66,7 +66,7 @@ warn_unused_ignores = true
 path = "src/codex_open_client/_version.py"
 
 [[tool.mypy.overrides]]
-module = "openai.*"
+module = "pydantic.*"
 ignore_missing_imports = true
 
 [dependency-groups]

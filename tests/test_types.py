@@ -7,9 +7,13 @@ from codex_open_client._types import (
     Reasoning,
     ReasoningSummary,
     Response,
+    ResponseFormatJsonObject,
+    ResponseFormatJsonSchema,
+    ResponseFormatText,
     ResponseFunctionToolCall,
     ResponseOutputMessage,
     ResponseReasoningItem,
+    TextConfig,
     Usage,
 )
 
@@ -95,3 +99,40 @@ def test_reasoning_defaults() -> None:
 def test_usage_fields() -> None:
     u = Usage(input_tokens=10, output_tokens=20, total_tokens=30)
     assert u.total_tokens == 30
+
+
+def test_response_format_text_defaults() -> None:
+    fmt = ResponseFormatText()
+    assert fmt.type == "text"
+
+
+def test_response_format_json_object_defaults() -> None:
+    fmt = ResponseFormatJsonObject()
+    assert fmt.type == "json_object"
+
+
+def test_response_format_json_schema() -> None:
+    schema = {"type": "object", "properties": {"name": {"type": "string"}}}
+    fmt = ResponseFormatJsonSchema(name="person", schema=schema, strict=True)
+    assert fmt.type == "json_schema"
+    assert fmt.name == "person"
+    assert fmt.schema == schema
+    assert fmt.strict is True
+    assert fmt.description is None
+
+
+def test_text_config_with_format() -> None:
+    fmt = ResponseFormatJsonSchema(
+        name="person",
+        schema={"type": "object", "properties": {"name": {"type": "string"}}},
+        strict=True,
+    )
+    cfg = TextConfig(format=fmt)
+    assert cfg.format == fmt
+    assert cfg.verbosity is None
+
+
+def test_text_config_defaults() -> None:
+    cfg = TextConfig()
+    assert cfg.format is None
+    assert cfg.verbosity is None

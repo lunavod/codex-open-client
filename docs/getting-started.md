@@ -75,5 +75,6 @@ for m in models:
 
 - [Authentication](guide/authentication.md) — headless mode, custom handlers, two-step login
 - [Responses](guide/responses.md) — multi-turn, reasoning, all parameters
+- [Structured Output](guide/structured-output.md) — Pydantic models, JSON schemas
 - [Tool Calls](guide/tool-calls.md) — function calling and roundtrips
 - [Error Handling](guide/error-handling.md) — retries, rate limits, exception types

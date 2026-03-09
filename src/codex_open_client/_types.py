@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Literal, Union
+from typing import Any, Generic, Literal, TypeVar, Union
+
+T = TypeVar("T")
 
 # ---------------------------------------------------------------------------
 # Config types
@@ -17,7 +19,36 @@ class Reasoning:
 
 
 @dataclass(slots=True)
+class ResponseFormatText:
+    """Plain text output (default)."""
+
+    type: Literal["text"] = "text"
+
+
+@dataclass(slots=True)
+class ResponseFormatJsonObject:
+    """Free-form JSON output."""
+
+    type: Literal["json_object"] = "json_object"
+
+
+@dataclass(slots=True)
+class ResponseFormatJsonSchema:
+    """Structured JSON output constrained to a specific schema."""
+
+    name: str
+    schema: dict[str, Any]
+    type: Literal["json_schema"] = "json_schema"
+    description: str | None = None
+    strict: bool | None = None
+
+
+FormatConfig = Union[ResponseFormatText, ResponseFormatJsonObject, ResponseFormatJsonSchema]
+
+
+@dataclass(slots=True)
 class TextConfig:
+    format: FormatConfig | dict[str, Any] | None = None
     verbosity: Literal["low", "medium", "high"] | None = None
 
 
@@ -184,6 +215,59 @@ class Response:
     def tool_calls(self) -> list[ResponseFunctionToolCall]:
         """Extract all function tool calls from output."""
         return [item for item in self.output if isinstance(item, ResponseFunctionToolCall)]
+
+
+@dataclass
+class ParsedResponse(Generic[T]):
+    """A response with the output text parsed into a structured object.
+
+    Wraps a ``Response`` and adds an ``output_parsed`` attribute containing
+    the deserialized model instance.
+
+    Usage::
+
+        from pydantic import BaseModel
+
+        class Person(BaseModel):
+            name: str
+            age: int
+
+        parsed = client.responses.parse(
+            model="gpt-5.1-codex-mini",
+            instructions="Extract the person info.",
+            input="John Smith is 30 years old.",
+            text_format=Person,
+        )
+        print(parsed.output_parsed.name)   # "John Smith"
+        print(parsed.response.output_text)  # raw JSON string
+    """
+
+    response: Response
+    output_parsed: T
+
+    @property
+    def id(self) -> str:
+        return self.response.id
+
+    @property
+    def model(self) -> str:
+        return self.response.model
+
+    @property
+    def output(self) -> list[OutputItem]:
+        return self.response.output
+
+    @property
+    def status(self) -> Literal["completed", "failed", "incomplete"] | None:
+        return self.response.status
+
+    @property
+    def usage(self) -> Usage | None:
+        return self.response.usage
+
+    @property
+    def output_text(self) -> str:
+        return self.response.output_text
 
 
 # ---------------------------------------------------------------------------

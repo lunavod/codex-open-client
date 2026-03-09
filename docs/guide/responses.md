@@ -34,7 +34,7 @@ print(response.usage)          # Usage(input_tokens=..., output_tokens=..., tota
 | `tool_choice` | `str` | `None` | `"auto"`, `"none"`, or `"required"` |
 | `parallel_tool_calls` | `bool` | `None` | Allow parallel tool calls |
 | `reasoning` | `Reasoning` | `None` | Extended thinking configuration |
-| `text` | `TextConfig` | `None` | Text output configuration |
+| `text` | `TextConfig` | `None` | Text output config ([structured output](structured-output.md)) |
 | `service_tier` | `str` | `None` | `"auto"`, `"flex"`, or `"priority"` |
 | `timeout` | `float` | Client default | Per-request timeout in seconds |
 
@@ -103,6 +103,14 @@ response = client.responses.create(
 print(response.reasoning_summary)  # summary of the thinking process
 print(response.output_text)        # final answer
 ```
+
+## Structured Output
+
+See the dedicated [Structured Output](structured-output.md) guide for:
+
+- **`parse()`** — pass a Pydantic model, get a typed `ParsedResponse[T]` back
+- **`ResponseFormatJsonSchema`** — manual JSON schema constraints
+- **`ResponseFormatJsonObject`** — free-form JSON mode
 
 ## Response Object
 

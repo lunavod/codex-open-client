@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Any, Literal, overload
+from typing import TYPE_CHECKING, Any, Literal, Protocol, TypeVar, overload
 
 import httpx
 
@@ -15,13 +15,28 @@ from codex_open_client._types import (
     FunctionCallOutput,
     FunctionTool,
     InputMessage,
+    ParsedResponse,
     Reasoning,
     Response,
+    ResponseFormatJsonSchema,
     ResponseFunctionToolCall,
     ResponseOutputMessage,
     ResponseReasoningItem,
     TextConfig,
 )
+
+
+class _PydanticModel(Protocol):
+    """Minimal protocol for a Pydantic BaseModel class."""
+
+    @classmethod
+    def model_json_schema(cls) -> dict[str, Any]: ...  # pragma: no cover
+
+    @classmethod
+    def model_validate_json(cls, data: str | bytes) -> Any: ...  # pragma: no cover
+
+
+_T = TypeVar("_T", bound=_PydanticModel)
 
 if TYPE_CHECKING:
     from codex_open_client._client import CodexClient
@@ -173,6 +188,92 @@ class Responses:
 
         return response_stream.get_final_response()
 
+    def parse(
+        self,
+        *,
+        model: str,
+        instructions: str,
+        input: str | list[_InputItem | dict[str, Any]],
+        text_format: type[_T],
+        tools: list[FunctionTool | dict[str, Any]] | None = None,
+        tool_choice: Literal["auto", "none", "required"] | None = None,
+        parallel_tool_calls: bool | None = None,
+        reasoning: Reasoning | None = None,
+        text: TextConfig | None = None,
+        service_tier: Literal["auto", "flex", "priority"] | None = None,
+        include: list[str] | None = None,
+        previous_response_id: str | None = None,
+        timeout: float | None = None,
+    ) -> ParsedResponse[_T]:
+        """Create a response and parse the output into a Pydantic model.
+
+        Like ``create()``, but automatically:
+
+        1. Converts the ``text_format`` Pydantic model class into a JSON schema
+        2. Sends it as ``text.format`` with ``type="json_schema"`` and ``strict=True``
+        3. Parses the JSON output back into a ``text_format`` instance
+
+        Requires ``pydantic`` to be installed (``pip install codex-open-client[pydantic]``
+        or ``pip install pydantic``).
+
+        Usage::
+
+            from pydantic import BaseModel
+
+            class Person(BaseModel):
+                name: str
+                age: int
+
+            parsed = client.responses.parse(
+                model="gpt-5.1-codex-mini",
+                instructions="Extract the person info.",
+                input="John Smith is 30 years old.",
+                text_format=Person,
+            )
+            print(parsed.output_parsed.name)  # "John Smith"
+
+        Args:
+            text_format: A Pydantic ``BaseModel`` subclass to use as the output schema.
+            text: Additional text config (e.g. ``verbosity``). Must not include ``format``
+                — that is set automatically from ``text_format``.
+            **kwargs: All other arguments are passed through to ``create()``.
+
+        Returns:
+            A ``ParsedResponse[T]`` with the parsed model in ``output_parsed``.
+        """
+        # Build the format config from the Pydantic model
+        fmt = _pydantic_to_format(text_format)
+
+        if text is not None:
+            if text.format is not None:
+                raise TypeError(
+                    "Cannot pass both text_format and text.format — "
+                    "text_format sets text.format automatically"
+                )
+            merged_text = TextConfig(format=fmt, verbosity=text.verbosity)
+        else:
+            merged_text = TextConfig(format=fmt)
+
+        response = self.create(
+            model=model,
+            instructions=instructions,
+            input=input,
+            stream=False,
+            tools=tools,
+            tool_choice=tool_choice,
+            parallel_tool_calls=parallel_tool_calls,
+            reasoning=reasoning,
+            text=merged_text,
+            service_tier=service_tier,
+            include=include,
+            previous_response_id=previous_response_id,
+            timeout=timeout,
+        )
+
+        assert isinstance(response, Response)
+        parsed = text_format.model_validate_json(response.output_text)
+        return ParsedResponse(response=response, output_parsed=parsed)
+
     def _request_with_retry(
         self,
         headers: dict[str, str],
@@ -249,10 +350,64 @@ def _serialize_tool(tool: FunctionTool | dict[str, Any]) -> dict[str, Any]:
 
 
 def _serialize_dataclass(obj: Any) -> dict[str, Any]:
-    """Serialize a dataclass, handling nested content parts."""
+    """Serialize a dataclass, stripping None values at all levels."""
     if isinstance(obj, dict):
         return obj
 
     d = asdict(obj)
-    # Remove None values
-    return {k: v for k, v in d.items() if v is not None}
+    return _strip_nones(d)
+
+
+def _strip_nones(d: dict[str, Any]) -> dict[str, Any]:
+    """Recursively remove None values from a dict."""
+    result: dict[str, Any] = {}
+    for k, v in d.items():
+        if v is None:
+            continue
+        if isinstance(v, dict):
+            result[k] = _strip_nones(v)
+        else:
+            result[k] = v
+    return result
+
+
+def _ensure_strict_schema(schema: dict[str, Any]) -> dict[str, Any]:
+    """Add ``additionalProperties: false`` to all objects in a JSON schema."""
+    schema = dict(schema)
+    if schema.get("type") == "object":
+        schema.setdefault("additionalProperties", False)
+        props = schema.get("properties")
+        if isinstance(props, dict):
+            schema["properties"] = {
+                k: _ensure_strict_schema(v) for k, v in props.items()
+            }
+    items = schema.get("items")
+    if isinstance(items, dict):
+        schema["items"] = _ensure_strict_schema(items)
+    for key in ("anyOf", "oneOf", "allOf"):
+        variants = schema.get(key)
+        if isinstance(variants, list):
+            schema[key] = [_ensure_strict_schema(v) for v in variants]
+    defs = schema.get("$defs")
+    if isinstance(defs, dict):
+        schema["$defs"] = {k: _ensure_strict_schema(v) for k, v in defs.items()}
+    return schema
+
+
+def _pydantic_to_format(model_class: type[Any]) -> ResponseFormatJsonSchema:
+    """Convert a Pydantic BaseModel class to a ``ResponseFormatJsonSchema``."""
+    try:
+        schema = model_class.model_json_schema()
+    except AttributeError:
+        raise TypeError(
+            f"{model_class.__name__} is not a Pydantic BaseModel. "
+            f"parse() requires a Pydantic model class (pip install pydantic)."
+        ) from None
+
+    schema = _ensure_strict_schema(schema)
+
+    return ResponseFormatJsonSchema(
+        name=model_class.__name__,
+        schema=schema,
+        strict=True,
+    )

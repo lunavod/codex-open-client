@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.0
+
+Structured output support.
+
+- `responses.parse()` — pass a Pydantic `BaseModel` class, get a typed `ParsedResponse[T]` back
+- `ResponseFormatJsonSchema` — constrain output to a JSON schema with `strict=True`
+- `ResponseFormatJsonObject` — free-form JSON output mode
+- `ResponseFormatText` — explicit plain text format
+- `TextConfig.format` field for manual format configuration
+- `ParsedResponse[T]` wrapper with `output_parsed` property
+- Recursive `None`-stripping in serialization for clean API payloads
+- Optional `pydantic` extra (`pip install codex-open-client[pydantic]`)
+- Replaced `openai` optional dependency with `pydantic`
+
 ## 0.1.0
 
 Initial release.

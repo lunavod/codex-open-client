@@ -37,6 +37,10 @@ All types are dataclasses with `slots=True`.
 
 ::: codex_open_client.FunctionCallOutput
 
+## Parsed Response
+
+::: codex_open_client.ParsedResponse
+
 ## Tools & Config
 
 ::: codex_open_client.FunctionTool
@@ -44,6 +48,14 @@ All types are dataclasses with `slots=True`.
 ::: codex_open_client.Reasoning
 
 ::: codex_open_client.TextConfig
+
+## Format Types
+
+::: codex_open_client.ResponseFormatText
+
+::: codex_open_client.ResponseFormatJsonObject
+
+::: codex_open_client.ResponseFormatJsonSchema
 
 ## Model
 

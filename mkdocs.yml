@@ -55,6 +55,7 @@ nav:
   - Guide:
       - Authentication: guide/authentication.md
       - Responses: guide/responses.md
+      - Structured Output: guide/structured-output.md
       - Streaming: guide/streaming.md
       - Tool Calls: guide/tool-calls.md
       - Models: guide/models.md

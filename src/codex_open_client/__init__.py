@@ -25,6 +25,7 @@ from codex_open_client._errors import (
 )
 from codex_open_client._types import (
     ContentPart,
+    FormatConfig,
     FunctionCallOutput,
     FunctionTool,
     InputImage,
@@ -35,6 +36,7 @@ from codex_open_client._types import (
     OutputContent,
     OutputItem,
     OutputText,
+    ParsedResponse,
     Reasoning,
     ReasoningSummary,
     Response,
@@ -42,6 +44,9 @@ from codex_open_client._types import (
     ResponseCreatedEvent,
     ResponseError,
     ResponseFailedEvent,
+    ResponseFormatJsonObject,
+    ResponseFormatJsonSchema,
+    ResponseFormatText,
     ResponseFunctionCallArgumentsDeltaEvent,
     ResponseFunctionCallArgumentsDoneEvent,
     ResponseFunctionToolCall,
@@ -103,13 +108,18 @@ __all__ = [
     "ResponseReasoningItem",
     "ReasoningSummary",
     # Types — response
+    "ParsedResponse",
     "Response",
     "ResponseError",
     "Usage",
     # Types — tools & config
+    "FormatConfig",
     "FunctionTool",
     "Tool",
     "Reasoning",
+    "ResponseFormatJsonObject",
+    "ResponseFormatJsonSchema",
+    "ResponseFormatText",
     "TextConfig",
     # Types — model
     "Model",

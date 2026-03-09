@@ -101,10 +101,40 @@ for call in response.tool_calls:
     print(f"{call.name}({call.arguments})")
 ```
 
+## Structured Output
+
+Get typed responses using Pydantic models:
+
+```bash
+pip install codex-open-client[pydantic]
+```
+
+```python
+from pydantic import BaseModel
+
+class Person(BaseModel):
+    name: str
+    age: int
+    city: str
+
+parsed = client.responses.parse(
+    model="gpt-5.1-codex-mini",
+    instructions="Extract the person info.",
+    input="John Smith is 30 years old and lives in New York.",
+    text_format=Person,
+)
+
+print(parsed.output_parsed.name)  # "John Smith"
+print(parsed.output_parsed.age)   # 30
+```
+
+Also works with manual JSON schema via `TextConfig` and `ResponseFormatJsonSchema` — see the [docs](https://lunavod.github.io/codex-open-client/).
+
 ## Features
 
 - **Automatic auth** — OAuth PKCE with token caching and refresh
 - **Typed API** — dataclass-based types for all objects, full mypy strict support
+- **Structured output** — `parse()` with Pydantic models or manual JSON schemas
 - **Streaming** — iterate SSE events with context manager support
 - **Tool calls** — function calling with roundtrip helpers
 - **Retries** — built-in exponential backoff for 429/5xx
