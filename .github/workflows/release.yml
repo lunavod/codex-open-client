@@ -1,0 +1,103 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: uv run ruff check src/ tests/
+      - run: uv run mypy src/codex_py/ tests/ --strict
+      - run: uv run pytest -x -q
+
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify tag matches package version
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          PKG_VERSION=$(grep '__version__' src/codex_py/_version.py | sed "s/.*\"\(.*\)\"/\1/")
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Tag version ($TAG_VERSION) does not match package version ($PKG_VERSION)"
+            exit 1
+          fi
+          echo "Version: $TAG_VERSION"
+
+  publish:
+    needs: [test, check-version]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    environment: pypi
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv build
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  docs:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Deploy docs
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+
+          # Extract major.minor for the doc version alias
+          MINOR_VERSION=$(echo "$TAG_VERSION" | grep -oP '^\d+\.\d+')
+
+          # Check if this is a pre-release (alpha/beta/rc)
+          if echo "$TAG_VERSION" | grep -qP '(a|b|rc)\d+'; then
+            # Pre-release: deploy under "X.Y-beta", no alias update
+            uv run mike deploy "${MINOR_VERSION}-beta" --push
+          else
+            # Stable: deploy under "X.Y" and update "latest" alias
+            uv run mike deploy "${MINOR_VERSION}" latest --update-aliases --push
+          fi
+
+  github-release:
+    needs: [publish, docs]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create GitHub Release
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+
+          if echo "$VERSION" | grep -qP '(a|b|rc)\d+'; then
+            PRERELEASE="--prerelease"
+            TITLE="codex-py $VERSION (pre-release)"
+          else
+            PRERELEASE=""
+            TITLE="codex-py $VERSION"
+          fi
+
+          gh release create "$TAG" \
+            --title "$TITLE" \
+            --generate-notes \
+            $PRERELEASE
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

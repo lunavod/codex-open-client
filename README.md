@@ -1,6 +1,13 @@
 # codex-py
 
+[![PyPI](https://img.shields.io/pypi/v/codex-py)](https://pypi.org/project/codex-py/)
+[![Python](https://img.shields.io/pypi/pyversions/codex-py)](https://pypi.org/project/codex-py/)
+[![License](https://img.shields.io/github/license/lunavod/codex-py)](LICENSE)
+[![CI](https://github.com/lunavod/codex-py/actions/workflows/ci.yml/badge.svg)](https://github.com/lunavod/codex-py/actions/workflows/ci.yml)
+
 Python client for OpenAI Codex — use your ChatGPT Plus/Pro subscription for API access.
+
+**[Documentation](https://lunavod.github.io/codex-py/)**
 
 ## Installation
 
@@ -8,25 +15,108 @@ Python client for OpenAI Codex — use your ChatGPT Plus/Pro subscription for AP
 pip install codex-py
 ```
 
-## Usage
+## Quick Start
 
 ```python
 import codex_py
 
 client = codex_py.CodexClient()
 
-# List available models
-for m in client.models.list():
-    print(m.slug)
-
-# Make a request
 response = client.responses.create(
     model="gpt-5.1-codex-mini",
     instructions="Be brief.",
-    input="Hello!",
+    input="What is 2 + 2?",
 )
 print(response.output_text)
 ```
+
+On first run, your browser opens for OAuth login. Tokens are cached at `~/.codex/auth.json` (shared with the official Codex CLI) and refreshed automatically after that.
+
+## Authentication
+
+Multiple ways to authenticate, depending on your environment:
+
+```python
+# Default — opens browser, local server catches the callback
+client = codex_py.CodexClient()
+
+# Headless — prints URL, you paste the redirect URL back (servers, Docker, CI)
+client = codex_py.CodexClient(headless=True)
+
+# Custom handler — full control over the auth UX (GUI apps, bots, web apps)
+def my_handler(url: str) -> str:
+    send_url_to_user(url)
+    return get_callback_url_from_user()
+
+client = codex_py.CodexClient(login_handler=my_handler)
+```
+
+For async or multi-step flows, use the two-step API:
+
+```python
+auth = codex_py.start_login()
+# present auth.url to the user, collect callback URL however you want
+tokens = codex_py.finish_login(auth, callback_url="http://localhost:1455/...")
+```
+
+## Streaming
+
+```python
+with client.responses.create(
+    model="gpt-5.1-codex-mini",
+    instructions="Be helpful.",
+    input="Write a haiku about Python.",
+    stream=True,
+) as stream:
+    for event in stream:
+        if isinstance(event, codex_py.ResponseOutputTextDeltaEvent):
+            print(event.delta, end="", flush=True)
+    print()
+```
+
+## Tool Calls
+
+```python
+import json
+
+tool = codex_py.FunctionTool(
+    name="get_weather",
+    description="Get weather for a city.",
+    parameters={
+        "type": "object",
+        "properties": {"city": {"type": "string"}},
+        "required": ["city"],
+        "additionalProperties": False,
+    },
+)
+
+response = client.responses.create(
+    model="gpt-5.1-codex-mini",
+    instructions="Use tools when helpful.",
+    input="What's the weather in Tokyo?",
+    tools=[tool],
+)
+
+for call in response.tool_calls:
+    print(f"{call.name}({call.arguments})")
+```
+
+## Features
+
+- **Automatic auth** — OAuth PKCE with token caching and refresh
+- **Typed API** — dataclass-based types for all objects, full mypy strict support
+- **Streaming** — iterate SSE events with context manager support
+- **Tool calls** — function calling with roundtrip helpers
+- **Retries** — built-in exponential backoff for 429/5xx
+- **Models** — list available models with cached metadata
+- **Headless mode** — works on remote servers, Docker, CI
+- **Custom login** — bring your own auth UX with `login_handler`
+- **CLI interop** — shares token storage with the official Codex CLI
+
+## Requirements
+
+- Python 3.10+
+- ChatGPT Plus or Pro subscription
 
 ## License
 
