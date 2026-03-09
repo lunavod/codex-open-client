@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+- Added `"original"` detail level to `InputImage` (gpt-5.4+ only)
+- Removed `file_id` from `InputImage` (not supported by Codex backend)
+- Added image input documentation with detail levels and base64 examples
+
 ## 0.2.0
 
 Structured output support.

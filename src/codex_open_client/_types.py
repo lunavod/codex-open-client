@@ -66,7 +66,7 @@ class InputText:
 @dataclass(slots=True)
 class InputImage:
     image_url: str
-    detail: Literal["auto", "low", "high"] = "auto"
+    detail: Literal["auto", "low", "high", "original"] = "auto"
     type: Literal["input_image"] = "input_image"
 
 

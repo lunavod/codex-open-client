@@ -104,6 +104,65 @@ print(response.reasoning_summary)  # summary of the thinking process
 print(response.output_text)        # final answer
 ```
 
+## Image Input
+
+Pass images via URL or base64 data URL using `InputImage`:
+
+```python
+response = client.responses.create(
+    model="gpt-5.1-codex-mini",
+    instructions="Describe what you see.",
+    input=[
+        codex_open_client.InputMessage(role="user", content=[
+            codex_open_client.InputText(text="What's in this image?"),
+            codex_open_client.InputImage(image_url="https://example.com/photo.jpg"),
+        ]),
+    ],
+)
+```
+
+For local files, use a base64 data URL:
+
+```python
+import base64
+
+with open("screenshot.png", "rb") as f:
+    data_url = "data:image/png;base64," + base64.b64encode(f.read()).decode()
+
+response = client.responses.create(
+    model="gpt-5.1-codex-mini",
+    instructions="Describe the screenshot.",
+    input=[
+        codex_open_client.InputMessage(role="user", content=[
+            codex_open_client.InputText(text="What's in this screenshot?"),
+            codex_open_client.InputImage(image_url=data_url),
+        ]),
+    ],
+)
+```
+
+### Detail Levels
+
+Control image resolution with the `detail` parameter:
+
+| Value | Behavior |
+|-------|----------|
+| `"auto"` | Model decides (default) |
+| `"low"` | 512×512 low-res, cheapest |
+| `"high"` | Up to 2,048px, standard high-fidelity |
+| `"original"` | Up to 6,000px — **gpt-5.4+ only** |
+
+```python
+codex_open_client.InputImage(
+    image_url=data_url,
+    detail="high",
+)
+```
+
+!!! warning "`\"original\"` requires gpt-5.4 or newer"
+    The `"original"` detail level is only supported on `gpt-5.4` and future models.
+    Using it with older models will be ignored or may error.
+
 ## Structured Output
 
 See the dedicated [Structured Output](structured-output.md) guide for:
