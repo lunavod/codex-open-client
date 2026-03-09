@@ -580,6 +580,56 @@ async with client.connect(model="gpt-5.1-codex") as session:
 The sync `client.responses.create()` remains the primary interface.
 WebSocket is async-only, opt-in for users who need multi-turn performance.
 
+## Current Project State
+
+### What exists (implemented and tested)
+
+```
+src/codex_py/
+├── __init__.py      — public re-exports: login, get_token, refresh, list_models,
+│                      build_headers, get_account_id, Client
+├── _version.py      — __version__ = "0.1.0"
+├── _pkce.py         — PKCE verifier + SHA-256 challenge generation
+├── _config.py       — OAuth constants, TokenData dataclass, load/save ~/.codex/auth.json
+│                      Constants: CLIENT_ID, AUTH_ENDPOINT, TOKEN_ENDPOINT, REDIRECT_URI,
+│                      SCOPES, AUDIENCE, CODEX_BASE_URL, CODEX_CLIENT_VERSION, DEFAULT_TOKEN_PATH
+├── _server.py       — Local HTTP server on :1455 to catch OAuth callback
+├── _auth.py         — login() (interactive/headless/no_browser), refresh(), get_token(),
+│                      _build_auth_url(), _extract_code_from_url(), _exchange_code()
+├── _api.py          — _decode_jwt_payload(), get_account_id(), build_headers(), list_models()
+└── _client.py       — Client() — OpenAI SDK wrapper (to be replaced by CodexClient)
+
+tests/
+├── test_version.py  — version check
+├── test_pkce.py     — verifier length, URL-safety, randomness, challenge correctness
+├── test_config.py   — TokenData expiry, save/load roundtrip, edge cases
+├── test_auth.py     — URL building, code extraction, cached token retrieval
+├── test_api.py      — JWT decoding, account ID extraction, header building
+└── test_live.py     — [pytest -m live] real API tests: token, refresh, headers,
+                       models listing, responses endpoint
+```
+
+### What needs to be built
+
+1. **`_types.py`** — All typed dataclasses: Response, OutputItem discriminated unions,
+   InputItem types, stream events, FunctionTool, Reasoning, TextConfig, Model, Usage, etc.
+2. **`_errors.py`** — Exception hierarchy (CodexError, APIError, AuthError, RateLimitError, etc.)
+3. **`_stream.py`** — SSE parser, ResponseStream class with __iter__, get_final_response(), etc.
+4. **`_responses.py`** — Responses resource with create() method (@overload for stream typing)
+5. **`_models.py`** — Models resource with list() method, 5-min cache
+6. **`_client.py`** — Rewrite as CodexClient class with .responses and .models sub-resources,
+   auth lifecycle, retry logic, login_handler support
+7. **`_auth.py`** — Add start_login() / finish_login() two-step flow
+8. **Update `__init__.py`** — Re-export CodexClient, all types, all errors, login functions
+
+### Tools & commands
+
+- `uv run pytest` — unit tests (27, live tests excluded by default)
+- `uv run pytest -m live` — live integration tests (7, require ~/.codex/auth.json)
+- `uv run mypy src/codex_py/ tests/ --strict` — type checking
+- `uv run ruff check` — linting
+- `uv sync --all-extras` — install all deps
+
 ## Out of Scope
 
 - `openai.OpenAI()` wrapper — the APIs are too different
