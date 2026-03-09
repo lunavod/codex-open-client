@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2
+
+- Fixed project URLs in pyproject.toml (codex-py → codex-open-client)
+
 ## 0.2.1
 
 - Added `"original"` detail level to `InputImage` (gpt-5.4+ only)
