@@ -25,6 +25,9 @@ def my_handler(url: str) -> str:
     return wait_for_user_paste()
 
 client = codex_py.CodexClient(login_handler=my_handler)
+
+# Configure retries and timeout
+client = codex_py.CodexClient(max_retries=3, timeout=60.0)
 ```
 
 The constructor handles auth internally — gets cached token or triggers login.
@@ -38,6 +41,7 @@ Three tiers of login control:
 | Method | Who controls UX | Server needed |
 |--------|----------------|---------------|
 | `login()` | Library (opens browser + local server) | Yes |
+| `login(no_browser=True)` | Library (prints URL + local server) | Yes |
 | `login(headless=True)` | Library (prints URL, reads stdin) | No |
 | `start_login()` / `finish_login()` | The app entirely | No |
 
@@ -47,11 +51,11 @@ Three tiers of login control:
 # Opens browser, starts local server on :1455, catches callback
 codex_py.login()
 
-# Prints URL, user pastes redirect URL back into stdin
-codex_py.login(headless=True)
-
 # Prints URL, but still runs local server to catch callback
 codex_py.login(no_browser=True)
+
+# Prints URL, user pastes redirect URL back into stdin
+codex_py.login(headless=True)
 ```
 
 ### Manual two-step (for apps that control the UX)
@@ -60,24 +64,25 @@ codex_py.login(no_browser=True)
 # Step 1: Get the auth URL and PKCE state
 auth = codex_py.start_login()
 auth.url       # OAuth URL to present to the user
-auth.state     # opaque object, pass to finish_login()
 
 # ... app shows URL in its own UI, user authenticates ...
 
 # Step 2: Complete with the callback URL
-tokens = codex_py.finish_login(auth, callback_url="http://localhost:1455/auth/callback?code=...&state=...")
+tokens = codex_py.finish_login(
+    auth,
+    callback_url="http://localhost:1455/auth/callback?code=...&state=...",
+)
 ```
 
 ### Login handler (for CodexClient)
 
 ```python
 # The client calls your handler when login is needed
-client = codex_py.CodexClient(login_handler=my_handler)
-
-# Handler signature:
 def my_handler(url: str) -> str:
     """Receives the OAuth URL, returns the callback URL after auth."""
     ...
+
+client = codex_py.CodexClient(login_handler=my_handler)
 ```
 
 ## Core Methods
@@ -93,6 +98,9 @@ models[0].display_name      # "gpt-5.3-codex"
 models[0].context_window    # 272000
 models[0].reasoning_levels  # ["low", "medium", "high"]
 models[0].input_modalities  # ["text", "image"]
+
+# Bypass the 5-minute cache
+models = client.models.list(force_refresh=True)
 ```
 
 Returns a list of `Model` dataclasses. Cached in memory with a 5-minute TTL
@@ -159,6 +167,13 @@ response = client.responses.create(
     ],
 )
 
+# Dict-based input also works
+response = client.responses.create(
+    model="gpt-5.1-codex-mini",
+    instructions="Be brief.",
+    input=[{"role": "user", "content": "Hello"}],
+)
+
 # With reasoning
 response = client.responses.create(
     model="gpt-5.1-codex",
@@ -193,22 +208,30 @@ response = client.responses.create(
             "type": "object",
             "properties": {"city": {"type": "string"}},
             "required": ["city"],
+            "additionalProperties": False,
         },
     )],
 )
 
+# Tool call roundtrip
 if response.tool_calls:
-    for call in response.tool_calls:
-        print(call.name, call.arguments)
-        result = execute_my_function(call.name, call.arguments)
-        response = client.responses.create(
-            model="gpt-5.1-codex",
-            instructions="Use tools when needed.",
-            input=[
-                *response.output,
-                FunctionCallOutput(call_id=call.call_id, output=result),
-            ],
-        )
+    call = response.tool_calls[0]
+    result = execute_my_function(call.name, call.arguments)
+    # Filter out reasoning items — they have server-side IDs
+    # that can't be referenced with store=false
+    output_items = [
+        item for item in response.output
+        if not isinstance(item, ResponseReasoningItem)
+    ]
+    response = client.responses.create(
+        model="gpt-5.1-codex",
+        instructions="Use tools when needed.",
+        input=[
+            InputMessage(role="user", content="What's the weather in Tokyo?"),
+            *output_items,
+            FunctionCallOutput(call_id=call.call_id, output=result),
+        ],
+    )
 ```
 
 ### Parameters
@@ -218,14 +241,15 @@ if response.tool_calls:
 | `model` | `str` | Yes | — | Model slug |
 | `instructions` | `str` | Yes | — | System prompt |
 | `input` | `str \| list[InputItem]` | Yes | — | String auto-wrapped to `[InputMessage(role="user", ...)]` |
-| `tools` | `list[Tool]` | No | `[]` | Function/tool definitions |
-| `tool_choice` | `Literal["auto", "none", "required"]` | No | `"auto"` | |
+| `tools` | `list[Tool]` | No | `None` | Function/tool definitions |
+| `tool_choice` | `Literal["auto", "none", "required"]` | No | `None` | |
 | `parallel_tool_calls` | `bool` | No | `None` | Per-model default if not set |
 | `reasoning` | `Reasoning` | No | `None` | `Reasoning(effort=..., summary=...)` |
 | `text` | `TextConfig` | No | `None` | `TextConfig(verbosity="medium")` |
 | `stream` | `bool` | No | `False` | Controls return type via overloads |
 | `service_tier` | `Literal["auto", "flex", "priority"]` | No | `None` | |
 | `include` | `list[str]` | No | `None` | e.g. `["reasoning.encrypted_content"]` |
+| `previous_response_id` | `str` | No | `None` | For multi-turn continuations |
 | `timeout` | `float` | No | `None` | Request timeout in seconds |
 
 `store=False` and `stream=True` are always sent to the API internally. The `stream`
@@ -268,16 +292,16 @@ class ResponseStream:
     """Iterable of ResponseStreamEvent with helper methods."""
 
     def __iter__(self) -> Iterator[ResponseStreamEvent]: ...
-    def __next__(self) -> ResponseStreamEvent: ...
     def get_final_response(self) -> Response: ...
-    def until_done(self) -> Self: ...
     def close(self) -> None: ...
 ```
 
+Iterating a consumed stream replays cached events. `get_final_response()` consumes
+the stream if not already consumed, raises `StreamError` if no terminal event.
+
 ### Stream event types
 
-We expose the same SSE event names as OpenAI, not simplified aliases.
-This means users can transfer knowledge from the OpenAI SDK directly.
+Same SSE event names as OpenAI — users can transfer knowledge from the OpenAI SDK.
 
 | Event type | Key fields | Description |
 |---|---|---|
@@ -286,25 +310,24 @@ This means users can transfer knowledge from the OpenAI SDK directly.
 | `response.completed` | `response: Response` | Done, includes usage |
 | `response.failed` | `response: Response` | Failed, includes error |
 | `response.incomplete` | `response: Response` | Truncated |
-| `response.output_item.added` | `item: OutputItem` | New output item started |
-| `response.output_item.done` | `item: OutputItem` | Output item completed |
-| `response.output_text.delta` | `delta: str` | Text chunk |
-| `response.output_text.done` | `text: str` | Full text of content part |
-| `response.function_call_arguments.delta` | `delta: str` | Tool call args chunk |
-| `response.function_call_arguments.done` | `arguments: str` | Full tool call args |
-| `response.reasoning_summary_text.delta` | `delta: str` | Reasoning chunk |
-| `response.reasoning_summary_text.done` | `text: str` | Full reasoning summary |
+| `response.output_item.added` | `item: OutputItem, output_index` | New output item started |
+| `response.output_item.done` | `item: OutputItem, output_index` | Output item completed |
+| `response.output_text.delta` | `delta: str, output_index, content_index` | Text chunk |
+| `response.output_text.done` | `text: str, output_index, content_index` | Full text of content part |
+| `response.function_call_arguments.delta` | `delta: str, output_index` | Tool call args chunk |
+| `response.function_call_arguments.done` | `arguments: str, output_index` | Full tool call args |
+| `response.reasoning_summary_text.delta` | `delta: str, output_index` | Reasoning chunk |
+| `response.reasoning_summary_text.done` | `text: str, output_index` | Full reasoning summary |
 
 ## Data Types
 
-All types use `dataclass` with `__slots__` for performance.
+All types use `dataclass(slots=True)` for performance.
 Dict-based input is also accepted wherever typed objects are expected
 (e.g. `{"role": "user", "content": "..."}` works alongside `InputMessage(...)`).
 
 ### Input types
 
 ```python
-# Union of all valid input items
 InputItem = Union[
     InputMessage,
     ResponseOutputMessage,
@@ -313,18 +336,18 @@ InputItem = Union[
     ResponseReasoningItem,
 ]
 
-@dataclass
+@dataclass(slots=True)
 class InputMessage:
     role: Literal["user", "assistant", "system", "developer"]
     content: str | list[ContentPart]
     type: Literal["message"] = "message"
 
-@dataclass
+@dataclass(slots=True)
 class InputText:
     text: str
     type: Literal["input_text"] = "input_text"
 
-@dataclass
+@dataclass(slots=True)
 class InputImage:
     image_url: str                   # data:image/png;base64,... or URL
     detail: Literal["auto", "low", "high"] = "auto"
@@ -332,7 +355,7 @@ class InputImage:
 
 ContentPart = Union[InputText, InputImage]
 
-@dataclass
+@dataclass(slots=True)
 class FunctionCallOutput:
     call_id: str
     output: str
@@ -342,14 +365,13 @@ class FunctionCallOutput:
 ### Output types
 
 ```python
-# Discriminated union of output items (by `type` field)
 OutputItem = Union[
     ResponseOutputMessage,
     ResponseFunctionToolCall,
     ResponseReasoningItem,
 ]
 
-@dataclass
+@dataclass(slots=True)
 class ResponseOutputMessage:
     id: str
     content: list[OutputContent]
@@ -357,14 +379,14 @@ class ResponseOutputMessage:
     status: str | None = None
     type: Literal["message"] = "message"
 
-@dataclass
+@dataclass(slots=True)
 class OutputText:
     text: str
     type: Literal["output_text"] = "output_text"
 
 OutputContent = Union[OutputText]    # extensible for future content types
 
-@dataclass
+@dataclass(slots=True)
 class ResponseFunctionToolCall:
     call_id: str
     name: str
@@ -373,14 +395,14 @@ class ResponseFunctionToolCall:
     status: Literal["in_progress", "completed", "incomplete"] | None = None
     type: Literal["function_call"] = "function_call"
 
-@dataclass
+@dataclass(slots=True)
 class ResponseReasoningItem:
     id: str
     summary: list[ReasoningSummary]
     encrypted_content: str | None = None
     type: Literal["reasoning"] = "reasoning"
 
-@dataclass
+@dataclass(slots=True)
 class ReasoningSummary:
     text: str
     type: Literal["summary_text"] = "summary_text"
@@ -389,83 +411,47 @@ class ReasoningSummary:
 ### Response
 
 ```python
-@dataclass
+@dataclass(slots=True)
 class Response:
     id: str
     model: str
-    status: Literal["completed", "failed", "incomplete"] | None
     output: list[OutputItem]
-    usage: Usage | None
-    error: ResponseError | None
+    status: Literal["completed", "failed", "incomplete"] | None = None
+    usage: Usage | None = None
+    error: ResponseError | None = None
 
     @property
     def output_text(self) -> str:
         """Join all output_text content blocks from output messages."""
-        ...
 
     @property
     def reasoning_summary(self) -> str | None:
         """Join all reasoning summary texts."""
-        ...
 
     @property
     def tool_calls(self) -> list[ResponseFunctionToolCall]:
         """Extract all function tool calls from output."""
-        ...
 
-@dataclass
+@dataclass(slots=True)
 class ResponseError:
     code: str
     message: str
 
-@dataclass
+@dataclass(slots=True)
 class Usage:
     input_tokens: int
     output_tokens: int
     total_tokens: int
 ```
 
-### Stream events
-
-```python
-# Discriminated union of all stream events (by `type` field)
-ResponseStreamEvent = Union[
-    ResponseCreatedEvent,
-    ResponseInProgressEvent,
-    ResponseCompletedEvent,
-    ResponseFailedEvent,
-    ResponseIncompleteEvent,
-    ResponseOutputItemAddedEvent,
-    ResponseOutputItemDoneEvent,
-    ResponseOutputTextDeltaEvent,
-    ResponseOutputTextDoneEvent,
-    ResponseFunctionCallArgumentsDeltaEvent,
-    ResponseFunctionCallArgumentsDoneEvent,
-    ResponseReasoningSummaryTextDeltaEvent,
-    ResponseReasoningSummaryTextDoneEvent,
-]
-
-@dataclass
-class ResponseOutputTextDeltaEvent:
-    delta: str
-    type: Literal["response.output_text.delta"] = "response.output_text.delta"
-
-@dataclass
-class ResponseCompletedEvent:
-    response: Response
-    type: Literal["response.completed"] = "response.completed"
-
-# ... etc for each event type
-```
-
 ### Tool definitions
 
 ```python
-@dataclass
+@dataclass(slots=True)
 class FunctionTool:
     name: str
     description: str
-    parameters: dict[str, Any]
+    parameters: dict[str, Any]       # must include "additionalProperties": False
     strict: bool = True
     type: Literal["function"] = "function"
 
@@ -475,12 +461,12 @@ Tool = Union[FunctionTool]           # extensible for web_search, etc.
 ### Config types
 
 ```python
-@dataclass
+@dataclass(slots=True)
 class Reasoning:
     effort: Literal["low", "medium", "high"] | None = None
     summary: Literal["auto", "concise", "detailed", "none"] | None = None
 
-@dataclass
+@dataclass(slots=True)
 class TextConfig:
     verbosity: Literal["low", "medium", "high"] | None = None
 ```
@@ -488,15 +474,15 @@ class TextConfig:
 ### Model
 
 ```python
-@dataclass
+@dataclass(slots=True)
 class Model:
     slug: str
     display_name: str
-    context_window: int | None
-    reasoning_levels: list[str]       # e.g. ["low", "medium", "high"]
-    input_modalities: list[str]       # e.g. ["text", "image"]
-    supports_parallel_tool_calls: bool
-    priority: int
+    context_window: int | None = None
+    reasoning_levels: list[str] = field(default_factory=list)
+    input_modalities: list[str] = field(default_factory=list)
+    supports_parallel_tool_calls: bool = False
+    priority: int = 0
 ```
 
 ## Error Handling
@@ -526,11 +512,13 @@ CodexError (base)
 ├── APIError
 │   ├── code: str | None
 │   ├── message: str
+│   ├── status_code: int
+│   ├── body: object
 │   │
-│   ├── AuthError              — 401, token expired, refresh failed
+│   ├── AuthError              — 401/403, token expired, refresh failed
 │   ├── RateLimitError         — 429, has retry_after: float | None
 │   ├── InvalidRequestError    — 400, bad parameters
-│   ├── ContextWindowError     — context_length_exceeded
+│   │   └── ContextWindowError — context_length_exceeded
 │   ├── QuotaExceededError     — subscription quota exhausted
 │   └── ServerError            — 5xx, overloaded
 │
@@ -547,23 +535,25 @@ The client parses "try again in X.XXXs" from error messages (same as the CLI).
 Default: 2 retries with exponential backoff.
 
 ```python
-# Configure retry behavior
-client = codex_py.CodexClient(
-    max_retries=3,                   # default: 2
-)
+client = codex_py.CodexClient(max_retries=3)   # default: 2
 ```
 
 ## Token Lifecycle
 
-The client handles token refresh transparently. If a request gets 401, the client
-tries to refresh the token once before raising `AuthError`.
+The client handles token refresh transparently at construction time.
+If the cached token is expired, the client tries to refresh before falling
+back to a full login flow.
 
 ```python
 client = codex_py.CodexClient()
-# Token refreshed automatically on every request if needed
-# If refresh token is also expired, raises AuthError
+# Token refreshed automatically at construction if needed
+# If refresh token is also expired, triggers login flow
 # User can explicitly re-login:
 client.login()
+
+# Access the current token and account ID
+client.token        # str
+client.account_id   # str | None
 ```
 
 ## Future: WebSocket Transport
@@ -582,50 +572,65 @@ WebSocket is async-only, opt-in for users who need multi-turn performance.
 
 ## Current Project State
 
-### What exists (implemented and tested)
+### Source files
 
 ```
 src/codex_py/
-├── __init__.py      — public re-exports: login, get_token, refresh, list_models,
-│                      build_headers, get_account_id, Client
+├── __init__.py      — public re-exports: CodexClient, all types, all errors,
+│                      login functions, API helpers
 ├── _version.py      — __version__ = "0.1.0"
 ├── _pkce.py         — PKCE verifier + SHA-256 challenge generation
 ├── _config.py       — OAuth constants, TokenData dataclass, load/save ~/.codex/auth.json
 │                      Constants: CLIENT_ID, AUTH_ENDPOINT, TOKEN_ENDPOINT, REDIRECT_URI,
 │                      SCOPES, AUDIENCE, CODEX_BASE_URL, CODEX_CLIENT_VERSION, DEFAULT_TOKEN_PATH
 ├── _server.py       — Local HTTP server on :1455 to catch OAuth callback
+│                      Uses threading.Event for reliable callback detection
 ├── _auth.py         — login() (interactive/headless/no_browser), refresh(), get_token(),
-│                      _build_auth_url(), _extract_code_from_url(), _exchange_code()
+│                      start_login(), finish_login(), PendingLogin
 ├── _api.py          — _decode_jwt_payload(), get_account_id(), build_headers(), list_models()
-└── _client.py       — Client() — OpenAI SDK wrapper (to be replaced by CodexClient)
-
-tests/
-├── test_version.py  — version check
-├── test_pkce.py     — verifier length, URL-safety, randomness, challenge correctness
-├── test_config.py   — TokenData expiry, save/load roundtrip, edge cases
-├── test_auth.py     — URL building, code extraction, cached token retrieval
-├── test_api.py      — JWT decoding, account ID extraction, header building
-└── test_live.py     — [pytest -m live] real API tests: token, refresh, headers,
-                       models listing, responses endpoint
+├── _types.py        — All typed dataclasses: Response, OutputItem/InputItem unions,
+│                      stream events, FunctionTool, Reasoning, TextConfig, Model, Usage
+├── _errors.py       — Exception hierarchy: CodexError, APIError, AuthError,
+│                      RateLimitError, InvalidRequestError, ContextWindowError, etc.
+├── _stream.py       — SSE parser (iter_sse_lines), event parsing (_parse_sse_event),
+│                      response parsing (_parse_response), ResponseStream class
+├── _responses.py    — Responses resource with create() (@overload for stream typing),
+│                      input serialization, retry logic for 429/5xx
+├── _models.py       — Models resource with list(), 5-minute TTL cache, force_refresh
+└── _client.py       — CodexClient class with .responses and .models sub-resources,
+                       auth lifecycle, login_handler support, max_retries, timeout
 ```
 
-### What needs to be built
+### Test files
 
-1. **`_types.py`** — All typed dataclasses: Response, OutputItem discriminated unions,
-   InputItem types, stream events, FunctionTool, Reasoning, TextConfig, Model, Usage, etc.
-2. **`_errors.py`** — Exception hierarchy (CodexError, APIError, AuthError, RateLimitError, etc.)
-3. **`_stream.py`** — SSE parser, ResponseStream class with __iter__, get_final_response(), etc.
-4. **`_responses.py`** — Responses resource with create() method (@overload for stream typing)
-5. **`_models.py`** — Models resource with list() method, 5-min cache
-6. **`_client.py`** — Rewrite as CodexClient class with .responses and .models sub-resources,
-   auth lifecycle, retry logic, login_handler support
-7. **`_auth.py`** — Add start_login() / finish_login() two-step flow
-8. **Update `__init__.py`** — Re-export CodexClient, all types, all errors, login functions
+```
+tests/
+├── test_version.py       — (1) version check
+├── test_pkce.py          — (4) verifier length, URL-safety, randomness, challenge
+├── test_config.py        — (8) TokenData expiry, save/load roundtrip, edge cases
+├── test_auth.py          — (9) URL building, code extraction, cached token,
+│                           start_login/finish_login
+├── test_api.py           — (7) JWT decoding, account ID extraction, header building
+├── test_types.py         — (11) Response properties, defaults, output_text, tool_calls
+├── test_errors.py        — (17) hierarchy, raise_for_status, retry_after parsing
+├── test_stream.py        — (25) SSE parsing, all event types, ResponseStream
+├── test_responses.py     — (12) input serialization, Reasoning/TextConfig/Tool serialization
+├── test_models.py        — (4) model parsing, cache staleness
+├── test_client_unit.py   — (3) CodexClient with cached tokens, login_handler
+├── test_live.py          — [pytest -m live] (7) original API tests: token, refresh,
+│                           headers, models, raw responses endpoint
+├── test_client_live.py   — [pytest -m live] (15) CodexClient tests: simple response,
+│                           usage, streaming, text deltas, multi-turn, dict input,
+│                           reasoning, model fields, force_refresh, tool call, roundtrip
+└── test_interactive.py   — [pytest -m interactive -s] (5) real OAuth login flows:
+                            auto, no_browser, headless, start/finish, login_handler
+```
 
-### Tools & commands
+### Commands
 
-- `uv run pytest` — unit tests (27, live tests excluded by default)
-- `uv run pytest -m live` — live integration tests (7, require ~/.codex/auth.json)
+- `uv run pytest` — unit tests (100, live/interactive excluded by default)
+- `uv run pytest -m live` — live API tests (22, require ~/.codex/auth.json)
+- `uv run pytest -m interactive -s -k <test>` — interactive login tests (5, one at a time)
 - `uv run mypy src/codex_py/ tests/ --strict` — type checking
 - `uv run ruff check` — linting
 - `uv sync --all-extras` — install all deps

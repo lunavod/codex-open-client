@@ -1,17 +1,126 @@
 """codex-py — Python client for OpenAI Codex."""
 
-from codex_py._api import build_headers, get_account_id, list_models
-from codex_py._auth import get_token, login, refresh
-from codex_py._client import Client
+from codex_py._api import build_headers, get_account_id
+from codex_py._auth import PendingLogin, finish_login, get_token, login, refresh, start_login
+from codex_py._client import CodexClient
+from codex_py._errors import (
+    APIConnectionError,
+    APIError,
+    APITimeoutError,
+    AuthError,
+    CodexError,
+    ContextWindowError,
+    InvalidRequestError,
+    QuotaExceededError,
+    RateLimitError,
+    ServerError,
+    StreamError,
+)
+from codex_py._types import (
+    ContentPart,
+    FunctionCallOutput,
+    FunctionTool,
+    InputImage,
+    InputItem,
+    InputMessage,
+    InputText,
+    Model,
+    OutputContent,
+    OutputItem,
+    OutputText,
+    Reasoning,
+    ReasoningSummary,
+    Response,
+    ResponseCompletedEvent,
+    ResponseCreatedEvent,
+    ResponseError,
+    ResponseFailedEvent,
+    ResponseFunctionCallArgumentsDeltaEvent,
+    ResponseFunctionCallArgumentsDoneEvent,
+    ResponseFunctionToolCall,
+    ResponseIncompleteEvent,
+    ResponseInProgressEvent,
+    ResponseOutputItemAddedEvent,
+    ResponseOutputItemDoneEvent,
+    ResponseOutputMessage,
+    ResponseOutputTextDeltaEvent,
+    ResponseOutputTextDoneEvent,
+    ResponseReasoningItem,
+    ResponseReasoningSummaryTextDeltaEvent,
+    ResponseReasoningSummaryTextDoneEvent,
+    ResponseStreamEvent,
+    TextConfig,
+    Tool,
+    Usage,
+)
 from codex_py._version import __version__
 
 __all__ = [
-    "Client",
-    "__version__",
-    "build_headers",
-    "get_account_id",
+    # Client
+    "CodexClient",
+    # Auth
+    "PendingLogin",
+    "finish_login",
     "get_token",
-    "list_models",
     "login",
     "refresh",
+    "start_login",
+    # API helpers
+    "build_headers",
+    "get_account_id",
+    # Errors
+    "APIConnectionError",
+    "APIError",
+    "APITimeoutError",
+    "AuthError",
+    "CodexError",
+    "ContextWindowError",
+    "InvalidRequestError",
+    "QuotaExceededError",
+    "RateLimitError",
+    "ServerError",
+    "StreamError",
+    # Types — input
+    "ContentPart",
+    "FunctionCallOutput",
+    "InputImage",
+    "InputItem",
+    "InputMessage",
+    "InputText",
+    # Types — output
+    "OutputContent",
+    "OutputItem",
+    "OutputText",
+    "ResponseFunctionToolCall",
+    "ResponseOutputMessage",
+    "ResponseReasoningItem",
+    "ReasoningSummary",
+    # Types — response
+    "Response",
+    "ResponseError",
+    "Usage",
+    # Types — tools & config
+    "FunctionTool",
+    "Tool",
+    "Reasoning",
+    "TextConfig",
+    # Types — model
+    "Model",
+    # Types — stream events
+    "ResponseCompletedEvent",
+    "ResponseCreatedEvent",
+    "ResponseFailedEvent",
+    "ResponseFunctionCallArgumentsDeltaEvent",
+    "ResponseFunctionCallArgumentsDoneEvent",
+    "ResponseInProgressEvent",
+    "ResponseIncompleteEvent",
+    "ResponseOutputItemAddedEvent",
+    "ResponseOutputItemDoneEvent",
+    "ResponseOutputTextDeltaEvent",
+    "ResponseOutputTextDoneEvent",
+    "ResponseReasoningSummaryTextDeltaEvent",
+    "ResponseReasoningSummaryTextDoneEvent",
+    "ResponseStreamEvent",
+    # Version
+    "__version__",
 ]

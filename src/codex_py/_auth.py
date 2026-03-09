@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import secrets
 import time
 import webbrowser
+from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urlparse
 
@@ -22,6 +24,18 @@ from codex_py._config import (
     save_tokens,
 )
 from codex_py._pkce import generate_challenge, generate_verifier
+
+
+@dataclass
+class PendingLogin:
+    """Opaque state for a two-step login flow.
+
+    Returned by ``start_login()``, passed to ``finish_login()``.
+    """
+
+    url: str
+    _verifier: str
+    _state: str
 
 
 def _build_auth_url(challenge: str, state: str) -> str:
@@ -70,7 +84,13 @@ def _exchange_code(code: str, verifier: str) -> TokenData:
         },
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
-    resp.raise_for_status()
+    if resp.status_code >= 400:
+        try:
+            body = resp.json()
+            detail = body.get("error_description", body.get("error", resp.text))
+        except Exception:
+            detail = resp.text
+        raise RuntimeError(f"Token exchange failed ({resp.status_code}): {detail}")
     data = resp.json()
 
     expires_at = None
@@ -105,7 +125,13 @@ def refresh(
         },
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
-    resp.raise_for_status()
+    if resp.status_code >= 400:
+        try:
+            body = resp.json()
+            detail = body.get("error_description", body.get("error", resp.text))
+        except Exception:
+            detail = resp.text
+        raise RuntimeError(f"Token refresh failed ({resp.status_code}): {detail}")
     data = resp.json()
 
     expires_at = None
@@ -146,11 +172,9 @@ def login(
     Returns:
         The obtained token data.
     """
-    import secrets as _secrets
-
     verifier = generate_verifier()
     challenge = generate_challenge(verifier)
-    state = _secrets.token_urlsafe(32)
+    state = secrets.token_urlsafe(32)
     auth_url = _build_auth_url(challenge, state)
 
     if headless:
@@ -213,5 +237,49 @@ def get_token(
     # No valid token — need to log in
     tokens = login(headless=headless, no_browser=no_browser, token_path=token_path)
     return tokens.access_token
+
+
+def start_login() -> PendingLogin:
+    """Begin a two-step login flow.
+
+    Returns a ``PendingLogin`` with a ``.url`` attribute containing the
+    OAuth URL to present to the user. Pass the result to ``finish_login()``
+    along with the callback URL after the user authenticates.
+
+    Example::
+
+        auth = codex_py.start_login()
+        # ... show auth.url to the user, let them authenticate ...
+        tokens = codex_py.finish_login(auth, callback_url="http://localhost:1455/...")
+    """
+    verifier = generate_verifier()
+    challenge = generate_challenge(verifier)
+    state = secrets.token_urlsafe(32)
+    auth_url = _build_auth_url(challenge, state)
+
+    return PendingLogin(url=auth_url, _verifier=verifier, _state=state)
+
+
+def finish_login(
+    pending: PendingLogin,
+    *,
+    callback_url: str,
+    token_path: Path = DEFAULT_TOKEN_PATH,
+) -> TokenData:
+    """Complete a two-step login flow.
+
+    Args:
+        pending: The ``PendingLogin`` returned by ``start_login()``.
+        callback_url: The full redirect URL (including the ``code`` parameter)
+            after the user authenticated in their browser.
+        token_path: Where to store the resulting tokens.
+
+    Returns:
+        The obtained token data.
+    """
+    code = _extract_code_from_url(callback_url)
+    tokens = _exchange_code(code, pending._verifier)
+    save_tokens(tokens, token_path)
+    return tokens
 
 

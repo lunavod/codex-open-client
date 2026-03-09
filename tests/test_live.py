@@ -6,7 +6,7 @@ Never run by default. Run explicitly with:
 
 import pytest
 
-from codex_py._api import build_headers, get_account_id, list_models
+from codex_py._api import build_headers, get_account_id
 from codex_py._auth import get_token
 from codex_py._config import CODEX_BASE_URL, DEFAULT_TOKEN_PATH, load_tokens
 
@@ -56,34 +56,6 @@ def test_token_refresh() -> None:
     new_tokens = refresh(tokens.refresh_token, DEFAULT_TOKEN_PATH)
     assert new_tokens.access_token
     assert isinstance(new_tokens.access_token, str)
-
-
-def test_list_models_returns_data() -> None:
-    tokens = load_tokens(DEFAULT_TOKEN_PATH)
-    if tokens is None:
-        pytest.skip("No cached tokens in ~/.codex/auth.json")
-
-    models = list_models(token_path=DEFAULT_TOKEN_PATH)
-    assert isinstance(models, list)
-    assert len(models) > 0
-
-    first = models[0]
-    assert "slug" in first
-    assert "display_name" in first
-
-
-def test_list_models_has_context_window() -> None:
-    """Models from the Codex backend include rich metadata."""
-    tokens = load_tokens(DEFAULT_TOKEN_PATH)
-    if tokens is None:
-        pytest.skip("No cached tokens in ~/.codex/auth.json")
-
-    models = list_models(token_path=DEFAULT_TOKEN_PATH)
-    slugs = [m["slug"] for m in models]
-    assert len(slugs) > 0
-    # At least one model should have context_window info
-    has_context = any("context_window" in m for m in models)
-    assert has_context, f"No model has context_window. Slugs: {slugs}"
 
 
 def test_responses_endpoint(token: str) -> None:

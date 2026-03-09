@@ -46,8 +46,9 @@ select = ["E", "F", "I", "W"]
 testpaths = ["tests"]
 markers = [
     "live: tests that use real OAuth tokens and hit the OpenAI API (deselect with '-m \"not live\"')",
+    "interactive: tests that require human interaction — run with 'pytest -m interactive -s'",
 ]
-addopts = "-m 'not live'"
+addopts = "-m 'not live and not interactive'"
 
 [tool.mypy]
 strict = true

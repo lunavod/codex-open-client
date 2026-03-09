@@ -6,7 +6,6 @@ import json
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Optional
 
 # OAuth parameters (from Codex CLI)
 CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann"
@@ -27,11 +26,11 @@ DEFAULT_TOKEN_PATH = Path.home() / ".codex" / "auth.json"
 @dataclass
 class TokenData:
     access_token: str
-    refresh_token: Optional[str] = None
-    expires_at: Optional[float] = None
+    refresh_token: str | None = None
+    expires_at: float | None = None
     token_type: str = "Bearer"
-    id_token: Optional[str] = None
-    scope: Optional[str] = None
+    id_token: str | None = None
+    scope: str | None = None
     _extra: dict[str, object] = field(default_factory=dict)
 
     def is_expired(self, margin_seconds: int = 60) -> bool:
@@ -46,7 +45,7 @@ class TokenData:
         return d
 
 
-def load_tokens(path: Path = DEFAULT_TOKEN_PATH) -> Optional[TokenData]:
+def load_tokens(path: Path = DEFAULT_TOKEN_PATH) -> TokenData | None:
     """Load tokens from disk. Returns None if file doesn't exist or is invalid."""
     if not path.is_file():
         return None

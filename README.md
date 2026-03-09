@@ -13,13 +13,19 @@ pip install codex-py
 ```python
 import codex_py
 
-# Get an access token (handles login, caching, and refresh)
-token = codex_py.get_token()
+client = codex_py.CodexClient()
 
 # List available models
-models = codex_py.list_models()
-for m in models:
-    print(m["slug"])
+for m in client.models.list():
+    print(m.slug)
+
+# Make a request
+response = client.responses.create(
+    model="gpt-5.1-codex-mini",
+    instructions="Be brief.",
+    input="Hello!",
+)
+print(response.output_text)
 ```
 
 ## License
